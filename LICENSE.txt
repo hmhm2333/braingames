@@ -1,0 +1,14 @@
+BrainGames distribution terms
+
+Copyright (c) 2026 BrainGames contributors.
+
+Permission is granted to download, install and use the official BrainGames plugin
+package with DeepSeek Harness. Source code, design documents, production assets
+and development materials are not offered under an open-source license. All
+rights in original BrainGames code not expressly granted here are reserved.
+
+Third-party components and character materials retain their own terms; these
+terms do not replace or restrict those licenses. See THIRD_PARTY_NOTICES.md.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. TO THE EXTENT
+PERMITTED BY LAW, THE AUTHORS ARE NOT LIABLE FOR DAMAGES ARISING FROM ITS USE.
