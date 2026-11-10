@@ -1,98 +1,80 @@
-# BrainGames for DSH
+# dsh-braingames
 
-任务在跑，顺手摸把鱼。三款低强度、单人认知小游戏，叠在 DSH 的透明舞台上，任务仍然看得见。操作任务时游戏凝滞，回来接着玩。
+任务在跑，顺手摸把鱼。三款低强度、单人认知小游戏，叠在DSH的透明舞台上。操作任务时凝滞，回来继续。
 
-当前版本 **0.24.0**，匹配 **DeepSeek Harness 0.2.2-rc.1**。安装包通用于 Windows、macOS 桌面端和 DSH 网页端，无须安装 Blender 或另启游戏服务。它是 DSH 插件，不能直接装到 Codex、Claude Code 或作为独立网页运行。
+当前版本 **0.25.1**，目标 **DeepSeek Harness 0.2.2-rc.1**。包名统一为 `dsh-braingames`。
 
-## 安装
+## 直接在DSH中安装
 
-从 [Releases](https://github.com/hmhm2333/braingames/releases/latest) 下载 `.tgz` 和 `SHA256SUMS`。只安装本仓库提供的文件，不要下载 GitHub 的 Source code 压缩包当作插件。安装需要访问 DSH 配置的包源以解析依赖；游戏资源随包提供。
+向DSH说：
 
-### Windows / macOS 桌面端
+> 请安装并启用 dsh-braingames，来源：https://github.com/hmhm2333/braingames
 
-先在 DSH 应用菜单的 **Manage dsh Command… / 管理 dsh 命令**中注册桌面端配套命令，打开新终端，确认 `dsh --version` 为 `0.2.2-rc.1`。npm 安装的独立 CLI 不能管理桌面端 profile。
+使用当前会话的插件管理工具即可。Standard/Creator预设默认提供该工具；其他预设没有时，可在“插件”页面按GitHub来源安装。DSH自身若要求确认或提示重启，按其提示处理。无需另注册DSH插件编号，也不必先下载一个安装包。
 
-结束需要保留的任务后，**完全退出** DSH，再执行以下命令（Windows PowerShell 和 macOS Terminal 相同）：
+仓库包含可读源码、构建所需的2D资源，以及已经构建的运行文件。直接安装不执行构建脚本，不需要用户安装Blender、Python或Sharp。
 
-```sh
-dsh plugin --profile desktop add 'https://github.com/hmhm2333/braingames/releases/download/v0.24.0/braingames-dsh-plugin-0.24.0.tgz' --ignore-scripts
-```
+## 终端安装（可选）
 
-重新打开 DSH，在“插件”页面确认 `@braingames/dsh-plugin` 已启用。关闭窗口可能只是隐藏应用：Windows 用托盘菜单退出，macOS 用 ⌘Q。
-
-也可以先下载 `.tgz`，将上述 URL 替换为文件的**绝对路径**。包不包含安装脚本或原生二进制依赖。不要添加 DSH 版本兼容豁免来强行安装其他版本。
-
-### DSH 网页端
-
-插件装在提供网页的 **DSH Host 所在电脑或服务器**上，不是在浏览器内安装扩展。停止该 web profile 的 Host 后执行：
+桌面端先使用DSH应用菜单注册其配套 `dsh` 命令；该注册只为在终端使用，不是插件注册。完全退出对应桌面Host后执行：
 
 ```sh
-npx @deepseek-ai/dsh@0.2.2-rc.1 plugin --profile web add 'https://github.com/hmhm2333/braingames/releases/download/v0.24.0/braingames-dsh-plugin-0.24.0.tgz' --ignore-scripts
-npx @deepseek-ai/dsh@0.2.2-rc.1 web
+dsh plugin --profile desktop add github:hmhm2333/braingames --ignore-scripts
 ```
 
-已有匹配版本的 `dsh` 命令也可以直接执行 `dsh plugin --profile web add '安装包 URL 或绝对路径' --ignore-scripts`，再启动 `dsh web`。使用自定义 profile 时，将 `web` 换成实际名称。桌面端和网页端的 profile 独立，需要分别安装。
-
-远程部署沿用 DSH 自身的认证和网络配置；插件不新增端口、外部资源服务器或认证入口。
-
-### 校验、升级与卸载
-
-Windows 下载后：
-
-```powershell
-Get-FileHash -Algorithm SHA256 .\braingames-dsh-plugin-0.24.0.tgz
-```
-
-macOS 下载后：
+网页端在提供页面的Host电脑安装，对应命令为：
 
 ```sh
-shasum -a 256 braingames-dsh-plugin-0.24.0.tgz
+dsh plugin --profile web add github:hmhm2333/braingames --ignore-scripts
 ```
 
-结果应与同一 Release 的 `SHA256SUMS` 一致。升级时完全退出相应 Host，再用目标版本 URL 执行同一 `add` 命令。插件未发布到 npm；不使用 `npm install @braingames/dsh-plugin`。
+随后启动对应Host。需要固定版本时，把来源写为 `github:hmhm2333/braingames#v0.25.1`。桌面端CLI应使用应用自带版本，npm安装的独立CLI不能管理desktop profile。Web可使用匹配版本的CLI。
 
-卸载：停止对应 Host，执行 `dsh plugin --profile desktop remove @braingames/dsh-plugin`（网页端改为 `web`，并使用对应 CLI）。本机最佳记录和位置不会随卸载自动删除。
+`dsh-braingames` 是包名，目前从GitHub安装；尚未发布到npm，不能把来源省略为一个裸包名。维护者只有选择发布到npm时才需要npm账号及包名权限，与DSH注册、源码是否开源是不同的事情。
+
+此前已安装 `@braingames/dsh-plugin` 的用户，在同一profile先卸载旧包，再安装新包，避免两套入口同时运行。本机最高记录保留；当前局不迁移。原生桌面与Web profile互相独立。
 
 ## 怎么玩
 
 | 游戏 | 操作 | 本局成绩 |
 | --- | --- | --- |
-| 干饭不吃泡 | 按空格接食物；泡泡和红牌上的食物都不接 | 坚持的秒数 |
-| 还是老样子 | 记住小动物最近点的菜；没有重新点菜时照旧，点击菜品 | 成功招待的顾客数 |
+| 干饭不吃泡 | 空格接食物；泡泡和红牌上的食物不接 | 坚持的秒数 |
+| 还是老样子 | 记住小动物最近点的菜；不重新点菜时照旧，点击菜品 | 招待的顾客数 |
 | 这船还能开 | 在脑中旋转木板，点击同形破口 | 补好的船板数 |
 
-每局三颗心，难度逐步增加。默认静音。游戏不是诊断或治疗工具，训练效果尚未作有效性验证。
+三款均为单人无尽模式，每局三颗心、逐步增加难度，默认静音。游戏成绩不是诊断指标，训练效果尚未作有效性验证。
 
-入口位于**任务标题栏、文件按钮左侧**，没有运行任务时也能手动打开。没玩完就继续，跨任务保持同一局；结算后可以重玩，或“换个玩”。**至少勾选两款游戏才可换另一款**，不会在半局中更换。
+入口在任务标题栏、文件按钮左侧。没有运行任务时也能手动打开；没玩完就继续，跨任务保持同一局，结算后才可重玩或“换个玩”。至少勾选两款才可换另一款。
 
-点击后面的任务、在任务中输入、切换窗口或任务结束时，游戏凝滞。默认画面保留，只能点鲸鱼娘恢复；恢复的第一次点击不作答，短暂停留后继续。关闭“保留凝滞画面”后，从标题栏继续。空白区域的鼠标操作交给 DSH；窗口不足 640×480 CSS 像素时暂停训练计时。
-
-上菜和补船可长按鲸鱼娘移动位置；接饭在全舞台下落，不需要拖动角色。
+点击任务、在任务中输入、切换窗口或任务结束时，游戏凝滞。默认保留画面，只能点鲸鱼娘恢复；恢复点击不作答，短暂停留后继续。关闭保留画面开关后，从标题栏继续。透明空白留给DSH，舞台小于640×480 CSS像素时不计训练时间。上菜与补船可以长按鲸鱼娘移动位置；接饭不需要拖动。
 
 ## 设置与数据
 
-在 DSH“插件”中打开 `@braingames/dsh-plugin` 详情，可以勾选游戏，开关自动邀请、仅任务运行时邀请、有未读完成提醒时不邀请、保留凝滞画面、刷新续局和默认模型推荐。三款游戏默认全部勾选，开关默认开启。邀请条件只控制自动邀请，不限制手动打开。
+设置在“插件”中 `dsh-braingames` 的详情页。可以勾选游戏，开关自动邀请、仅任务运行时邀请、有未读完成提醒时不邀请、保留凝滞画面、刷新续局和默认模型推荐。默认三款全部勾选、开关开启；邀请条件不限制手动启动。
 
-**模型推荐**开启且有多款候选时，新开局或“换个玩”会调用一次已配置的默认模型。只读取当前任务最近六条用户文字，总计最多四千字、每条最多一千二百字；不读助手回复、工具结果、图片或附件。调用可能产生模型服务费用。关闭该开关即可仅用本地随机选择。模型未配置或调用失败会显示原因，可以重试或明确选择随机开始。
+模型推荐开启且有多个候选时，新开局或换款会调用一次DSH默认模型。只读取当前任务最近六条用户文字，总计最多四千字、每条最多一千二百字；不读取助手回复、工具结果、图片或附件，可能产生模型服务费用。关闭后仅本地随机。模型未配置或调用失败会明示，可重试或明确随机开始；续局、刷新和恢复不调用模型。
 
-插件不管理 API 密钥，不上传成绩，不在存档中保存聊天正文。续局、恢复和刷新不调用模型。
+插件不管理API密钥，不上传成绩，不在游戏存档保存聊天正文。角色、字体和图片随包提供，不另开素材服务。后台停止动画和训练时钟。
 
-**刷新续局**限同一标签页、同一次 DSH Host 运行。刷新后先凝滞；重启 Host、新开页面或重新加载插件不承诺续局。本机最高记录和位置单独保留。后台停止游戏动画和训练时钟。
+刷新续局只限同一标签页、同一次Host运行。刷新后先凝滞；Host重启不恢复旧局。本机最高记录和位置独立保留。
 
-## 兼容范围
+## 源码与构建
 
-| 环境 | 当前证据 |
-| --- | --- |
-| Windows 桌面端，DSH 0.2.2-rc.1 | 固定原生客户端实际安装、输入交接和刷新续局测试 |
-| DSH 网页端，匹配版本 | web profile 安装；浏览器内三款打包游戏、全部跨游戏切换与资源加载测试；完整远程认证部署未验收 |
-| macOS 桌面端，匹配版本 | 同一跨平台包；代码及官方公开接口审查支持，尚无 macOS 真机测试 |
+游戏、runtime和DSH适配的可读源码在本仓库，原创代码使用MIT许可；不是仅公布一个编译包。第三方图像、字体、PixiJS和角色素材保留各自许可与署名。
 
-透明舞台位于 **DSH 窗口内部**，不覆盖系统桌面或其他应用。网页建议使用有硬件加速的 Chromium 浏览器；Safari、手机和平板未验收。DSH 预览版本可能改变接口，当前兼容范围不自动扩展到未来版本。
+```sh
+npm ci --ignore-scripts --legacy-peer-deps
+npm run build
+```
 
-平台与命令依据：[官方桌面端文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/apps/desktop/README.md)、[官方 CLI 文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/apps/cli/README.md)。
+构建读取仓库内的游戏代码、2D图集和字库，无须本机制作目录或私有建模工程。`lib/` 是对应源码的运行输出，一并提交以支持DSH直接安装。修改源码后先构建，再提交源码与运行输出。没有安装生命周期脚本。
 
-## 分发边界
+策划、开发记录、测试证据、Blender制作工程和原始参考资料不在此仓库中。
 
-本仓库仅分发安装包、校验值、安装使用说明及许可声明。源码、策划、测试记录、建模工程和制作资料保持私有。安装包含运行必需的 JavaScript 和像素资源；公开安装包不等于实现不可被查看。
+## 兼容与许可
 
-原创程序的使用许可见 [LICENSE.txt](LICENSE.txt)，第三方署名见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+同一包面向匹配版本的Windows、macOS桌面和DSH Web。Windows原生客户端与浏览器玩法已测试；macOS尚未真机测试，完整远程Web认证部署未验收。建议使用启用硬件加速的Chromium浏览器，Safari与触屏设备未验收。透明舞台只在DSH窗口内，不覆盖系统桌面。DSH升级可能改变接口，本包不绕过版本兼容检查。
+
+依据：[官方插件管理文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/packages/boot/plugin-manager/README.md)、[CLI文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.2-rc.1/apps/cli/README.md)。
+
+[原创代码许可](LICENSE.txt) · [第三方许可与署名](THIRD_PARTY_NOTICES.md)

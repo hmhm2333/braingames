@@ -1,0 +1,76 @@
+{
+  "name": "dsh-braingames",
+  "version": "0.25.1",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://github.com/hmhm2333/braingames",
+  "description": "BrainGames for DSH: a gentle single-player game while tasks run",
+  "type": "module",
+  "main": "host.mjs",
+  "exports": {
+    ".": "./host.mjs",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "host.mjs",
+    "resources.mjs",
+    "games.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "LICENSE.txt",
+    "lib/client.js",
+    "lib/client.game.js",
+    "lib/client.g04.js",
+    "lib/client.g02.js",
+    "lib/resources.json",
+    "lib/assets/**/*.png",
+    "lib/FONT-LICENSE.txt",
+    "lib/KENNEY-LICENSE.txt",
+    "lib/PIXI-LICENSE.txt",
+    "capabilities.mjs",
+    "lib/catalog.mjs"
+  ],
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "sharp": "0.35.4"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "~3.18.5"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager",
+        "@deepseek-ai/dsh-client-shortcuts"
+      ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-client-connection": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-layout": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-settings": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-ui-plugin-manager": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-client-shortcuts": "0.2.2-rc.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hmhm2333/braingames.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hmhm2333/braingames/issues"
+  }
+}

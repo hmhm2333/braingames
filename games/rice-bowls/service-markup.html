@@ -1,0 +1,38 @@
+<canvas id="scene" width="360" height="220" aria-hidden="true"></canvas>
+<div id="move-layer"><div id="move-plane">
+    <canvas id="move-preview" width="0" height="0" aria-hidden="true" hidden></canvas>
+    <button id="move-whale" type="button" tabindex="-1" aria-label="长按鲸鱼娘移动餐台" title="长按鲸鱼娘拖动餐台" hidden></button>
+    <section id="welcome" class="window welcome" hidden aria-label="开饭前">
+      <div class="window-body">
+        <div class="rules">
+          <div class="rule"><div class="rule-picture"><canvas id="rule-new-guest" width="64" height="70" aria-hidden="true"></canvas><div class="rule-speech"><img id="rule-meal" alt="" draggable="false"></div></div><span data-pixel-text>说了，记新的</span></div>
+          <div class="rule"><div class="rule-picture"><canvas id="rule-old-guest" width="64" height="70" aria-hidden="true"></canvas><canvas id="rule-plate" class="rule-plate" width="48" height="28" aria-hidden="true"></canvas></div><span data-pixel-text>没说，照旧上</span></div>
+        </div>
+        <button id="start" class="primary" data-game-control><span data-pixel-text>开饭</span></button>
+      </div>
+    </section>
+    <div id="order" class="order window" hidden aria-live="polite"><span id="order-caption" data-pixel-text></span><img id="order-icon" alt="" draggable="false"><span id="order-label" class="sr-only"></span></div>
+    <p id="front-name" class="sr-only" hidden></p>
+    <nav id="menu" class="menu" aria-label="选一份，上菜" hidden></nav>
+    <div id="lives" class="lives" role="img" aria-label="还能失误 3 次" title="送错或漏单累计三次后结束本局" hidden>
+      <svg viewBox="0 0 9 8" aria-hidden="true"><path class="heart-edge" d="M0 1H1V0H4V1H5V0H8V1H9V4H8V5H7V6H6V7H5V8H4V7H3V6H2V5H1V4H0Z"/><path class="heart-fill" d="M1 2H2V1H3V2H6V1H7V2H8V4H7V5H6V6H5V7H4V6H3V5H2V4H1Z"/><path class="heart-glint" d="M2 2H3V3H2Z"/></svg>
+      <svg viewBox="0 0 9 8" aria-hidden="true"><path class="heart-edge" d="M0 1H1V0H4V1H5V0H8V1H9V4H8V5H7V6H6V7H5V8H4V7H3V6H2V5H1V4H0Z"/><path class="heart-fill" d="M1 2H2V1H3V2H6V1H7V2H8V4H7V5H6V6H5V7H4V6H3V5H2V4H1Z"/><path class="heart-glint" d="M2 2H3V3H2Z"/></svg>
+      <svg viewBox="0 0 9 8" aria-hidden="true"><path class="heart-edge" d="M0 1H1V0H4V1H5V0H8V1H9V4H8V5H7V6H6V7H5V8H4V7H3V6H2V5H1V4H0Z"/><path class="heart-fill" d="M1 2H2V1H3V2H6V1H7V2H8V4H7V5H6V6H5V7H4V6H3V5H2V4H1Z"/><path class="heart-glint" d="M2 2H3V3H2Z"/></svg>
+    </div>
+    <div id="response" class="response" role="img" aria-label="剩余8秒" hidden>
+      <svg viewBox="0 0 9 9" aria-hidden="true"><path fill="currentColor" d="M2 0H7V1H8V2H9V7H8V8H7V9H2V8H1V7H0V2H1V1H2ZM2 2V7H7V2ZM4 2H5V4H7V5H4Z"/></svg>
+      <span class="response-track" aria-hidden="true"><i id="response-fill"></i></span>
+      <span id="response-seconds" data-pixel-text aria-hidden="true">8</span>
+    </div>
+    <section id="summary" class="window summary" hidden aria-label="这次的小结">
+      <div class="window-body">
+        <h2 data-pixel-text>这次招待了</h2>
+        <p class="customer-result" aria-live="polite"><strong id="customer-value" data-pixel-text>0</strong><span data-pixel-text>位顾客</span></p>
+        <p class="best-result"><span data-pixel-text>最佳记录</span><span class="best-time"><strong id="best-value" data-pixel-text>0</strong><span data-pixel-text>位</span></span></p>
+        <div class="dialog-actions"><button id="replay" class="primary" data-game-control><span data-pixel-text>再开一桌</span></button><button id="random" class="secondary" data-game-control hidden><span data-pixel-text>随机一个</span></button></div>
+      </div>
+    </section>
+    <section id="loading" class="window status-dialog" aria-live="polite"><div class="window-body"><p data-pixel-text>鱼去端饭了。</p><div class="rice-grains" aria-hidden="true"><i></i><i></i><i></i></div></div></section>
+    <section id="error" class="window status-dialog" hidden role="alert"><div class="window-body"><p data-pixel-text>这份没端上来。</p><p id="error-detail"></p><button id="reload" class="primary" data-game-control><span data-pixel-text>重新载入</span></button></div></section>
+    <p id="announcement" class="sr-only" aria-live="polite"></p>
+</div></div>

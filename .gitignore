@@ -1,0 +1,5 @@
+node_modules/
+build-report.json
+*.tgz
+.env
+.env.*
