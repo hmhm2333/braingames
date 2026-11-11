@@ -1,14 +1,16 @@
 import {GAME_COPY,SHARED_COPY} from '../../runtime/game-catalog.mjs';
 import {applyCopy} from '../../runtime/apply-copy.mjs';
+import {mountControlGuide} from '../../runtime/control-guide.mjs';
 const copy=GAME_COPY['regulars-g04'];
-import {RegularsSession,MAX_MISTAKES,RESPONSE_MS,COUNTER_FLOW} from './regulars-core.mjs';
+import {RegularsSession,MAX_MISTAKES,RESPONSE_MS} from './regulars-core.mjs';
 import {ServiceScene,loadSprites,guestName,mealName} from './service-scene.mjs';
-import {menuSlot,viewportLayout} from './layout.mjs';
+import {menuSlot,orderCueRect,viewportLayout} from './layout.mjs';
 import {readPlacement,savePlacement,placementBounds,clampAnchor} from './placement.mjs';
 import {createMoveHandle} from '../../runtime/move-handle.mjs';
 import {createDragPreview,previewRect} from './drag-preview.mjs';
 import {createPixelText} from '../../runtime/pixel-text.mjs';
 import {RECOVERY_MS,playableSize} from '../../runtime/presentation.mjs';
+const GUEST_NAME_MS=800;
 
 export function mountGame(host,options={}){
   if(!(host instanceof HTMLElement))throw TypeError('Game host must be an HTMLElement');
@@ -40,7 +42,7 @@ function fitStage(){
   const dialog=['welcome','summary'].includes(phase)?$(phase).getBoundingClientRect().height:0;
   const requested=dragAnchor??(preferredPlacement?[preferredPlacement.x*width,preferredPlacement.y*height]:base.scene.whale);
   const bounds=placementBounds(phase,base,dialog),anchor=clampAnchor(requested,bounds,width,height);placementGeometry={width,height,bounds};
-  const v=scene.resize(width,height,count,anchor),vars={'ui-font':v.fontSize,'ui-line':v.lineHeight,'menu-left':v.menu.left,'menu-top':v.menu.top,'menu-width':v.menu.width,'menu-height':v.menu.height,'panel-left':v.panel.left,'panel-width':v.panel.width,'core-offset-y':v.offset[1]};
+  const v=scene.resize(width,height,count,anchor),vars={'ui-font':v.fontSize,'ui-line':v.lineHeight,'menu-left':v.menu.left,'menu-top':v.menu.top,'menu-width':v.menu.width,'menu-height':v.menu.height,'hud-left':v.hudLeft,'panel-left':v.panel.left,'panel-width':v.panel.width,'core-offset-y':v.offset[1]};
   for(const [name,value] of Object.entries(vars))root.style.setProperty('--'+name,value+'px');
   root.style.setProperty('--menu-columns',v.menu.columns);root.style.setProperty('--menu-rows',v.menu.rows);
 }
@@ -53,7 +55,7 @@ function showError(error){
   on(reload,'click',()=>{void options.onReload().catch(showError);});box.append(title,text,reload);
   root.replaceChildren(box);pixelText?.present();pixelText?.flush();reload.focus({preventScroll:true});options.onViewChange?.('error');
 }
-function token(){return`${session.phase}:${session.visit?.id}:${session.canServe()}:${session.service?.outcome.visitId}`;}
+function token(){return`${session.phase}:${session.visit?.id}:${session.canSelect()}`;}
 function updateResponse(){
   const canRespond=(session.phase==='running'||frozenVisible&&session.phase==='paused')&&!!session.visit&&!session.arrival&&!session.service&&!session.finishRequested;
   const visible=(session.phase==='running'||frozenVisible&&session.phase==='paused')&&(canRespond||session.service?.outcome.reason==='timeout'&&!session.service.removed);
@@ -68,9 +70,8 @@ function updateResponse(){
 }
 function updateUI(force=false){
   syncMenu();updateResponse();
-  const correctionStart=session.service?.outcome.reason==='timeout'?600:COUNTER_FLOW.refuseMs;
-  const correction=session.service&&!session.service.outcome.correct&&session.service.elapsedMs>=correctionStart&&session.service.elapsedMs<correctionStart+600;
-  const key=`${session.phase}:${session.revision}:${!!correction}`;if(!force&&key===uiKey)return;uiKey=key;const s=session.snapshot();if(frozenVisible&&s.phase==='paused')s.phase='running';
+  const showName=!!session.arrival&&!session.arrival.choice&&session.arrival.elapsedMs<GUEST_NAME_MS;
+  const key=`${session.phase}:${session.revision}:${showName}`;if(!force&&key===uiKey)return;uiKey=key;const s=session.snapshot();if(frozenVisible&&s.phase==='paused')s.phase='running';
   root.dataset.phase=s.phase;
   for(const id of ['welcome','summary','loading'])$(id).hidden=id!==s.phase;
   if(layoutPhase!==s.phase){layoutPhase=s.phase;fitStage();}
@@ -80,20 +81,28 @@ function updateUI(force=false){
   if(s.service&&s.service.outcome.visitId!==announcedVisit){
     const out=s.service.outcome;announcedVisit=out.visitId;
     const tail=s.lives?`还能失误 ${s.lives} 次。`:`已累计失误 ${MAX_MISTAKES} 次，这位离开后就休息。`;
-    $('announcement').textContent=out.reason==='timeout'?`这一单没赶上，客人空手离开。${tail}`:out.correct?`给${guestName(out.guest)}的菜上对了。`:`${guestName(out.guest)}拒收了，它要${mealName(out.ordered)}。${tail}`;
+    $('announcement').textContent=out.reason==='timeout'?`这一单没赶上，客人空手离开。${tail}`:out.correct?`给${guestName(out.guest)}的菜上对了。`:`${guestName(out.guest)}拒收了这份菜。${tail}`;
   }
   for(const [i,heart] of [...$('lives').children].entries())heart.dataset.lost=String(i>=s.lives);
-  for(const button of $('menu').children){button.disabled=relocating||!s.canServe;button.dataset.selected=String(s.service?.outcome.chosen===button.dataset.meal);}
-  const order=s.phase==='running'&&!s.arrival&&(correction||!s.finishRequested&&(!s.service||s.service.outcome.correct&&s.visit.kind!=='recall'))?s.visit:null;
+  // An occupied menu slot keeps the click inside the game even while a dish is being served.
+  const selected=s.arrival?.choice??s.service?.outcome.chosen;
+  for(const button of $('menu').children){
+    button.disabled=relocating||session.phase!=='running';
+    button.setAttribute('aria-disabled',String(!s.canSelect||button.disabled));
+    button.dataset.selected=String(selected===button.dataset.meal);
+  }
+  const showMeal=s.visit?.hinted&&!s.service&&!s.finishRequested&&!s.arrival?.choice;
+  const order=s.phase==='running'&&(showName||showMeal)?s.visit:null;
   $('order').hidden=!order;
   if(order){
-    const recall=order.kind==='recall'&&!correction;
-    $('order').setAttribute('aria-label',recall?guestName(order.guest):`${guestName(order.guest)}要${mealName(order.meal)}`);
-    $('order').dataset.kind=correction?'correction':order.kind;
-    $('order-caption').textContent=correction?(s.service.outcome.reason==='timeout'?'鱼慢了':'这份才对'):guestName(order.guest);
-    $('order-icon').hidden=recall;$('order-label').textContent=recall?'':mealName(order.meal);
-    if(recall)$('order-icon').removeAttribute('src');else $('order-icon').src=mealUrl(order.meal);
-    const box=scene.cueBox(order.guest,s.visit.motion);$('order').style.left=box.left+'px';$('order').style.top=box.top+'px';
+    const name=guestName(order.guest);
+    $('order').setAttribute('aria-label',showMeal?`${name}要${mealName(order.meal)}`:name);
+    $('order').dataset.kind=order.kind;
+    $('order-caption').hidden=!showName;$('order-caption').textContent=showName?name:'';
+    $('order-icon').hidden=!showMeal;$('order-label').textContent=showMeal?mealName(order.meal):'';
+    if(showMeal)$('order-icon').src=mealUrl(order.meal);else $('order-icon').removeAttribute('src');
+    const cue=orderCueRect(scene.layout,order.motion);
+    for(const [name,value] of Object.entries(cue))$('order').style.setProperty('--order-'+name,value+'px');
   }else{$('order').removeAttribute('aria-label');$('order-label').textContent='';$('order-icon').removeAttribute('src');}
   const front=s.visit?.guest;
   $('front-name').hidden=!front||s.phase!=='running';
@@ -140,7 +149,7 @@ function recover(){recoveryUntil=performance.now()+RECOVERY_MS;root.dataset.reco
 function pause(reason='background'){if(!session?.pause(reason))return;moveGesture?.cancel();stop();}
 function resume(){if(session.resume()){pointer=null;run();recover();}}
 function serve(meal){
-  if(relocating||recoveryUntil||!playableSize(root.clientWidth,root.clientHeight)||!session.canServe())return;
+  if(relocating||recoveryUntil||!playableSize(root.clientWidth,root.clientHeight)||!session.canSelect())return;
   const now=performance.now(),delta=lastWall===null?0:now-lastWall;
   if(delta>250){recover();return;}
   session.advance(delta);session.serve(meal);
@@ -176,6 +185,7 @@ function cancelMoving(){
 
 function syncMenu(){
   const key=session.activeMeals.join(',');if(key===menuKey)return;menuKey=key;pointer=null;
+  $('menu').dataset.mealCount=String(session.activeMeals.length);
   $('menu').replaceChildren();
   const slots=session.activeMeals.map((id,index)=>({id,...menuSlot(index)})).sort((a,b)=>a.row-b.row||a.column-b.column);
   for(const {id,row,column} of slots){
@@ -188,7 +198,9 @@ function availability(){if(!session)return;const small=!playableSize(root.client
 async function init(){
   const markup=options.ui?options.ui.markup:await (async()=>{const response=await fetch(new URL('./service-markup.html',import.meta.url));if(!response.ok)throw Error('游戏界面加载失败 ('+response.status+')');return response.text();})();
   root.innerHTML=markup;
-  applyCopy(root,{'#welcome .rule:first-child>span':copy.rules[0],'#welcome .rule:last-child>span':copy.rules[1],'#start span':copy.start,'#summary h2':copy.resultLead,'#summary .customer-result>span':copy.resultUnit,'#summary .best-result>span:first-child':copy.bestLabel,'#replay span':copy.replay,'#random span':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload span':SHARED_COPY.reload});await styleReady;await pixelFace.load();document.fonts.add(pixelFace);pixelText=createPixelText(root);
+  applyCopy(root,{'#welcome .rule:first-child>span':copy.rules[0],'#welcome .rule:last-child>span':copy.rules[1],'#start span':copy.start,'#summary h2':copy.resultLead,'#summary .customer-result>span':copy.resultUnit,'#summary .best-result>span:first-child':copy.bestLabel,'#replay span':copy.replay,'#random span':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload span':SHARED_COPY.reload});
+  mountControlGuide(root,copy.control);
+  await styleReady;await pixelFace.load();document.fonts.add(pixelFace);pixelText=createPixelText(root);
   sprites=await loadSprites({manifest:options.manifest,loadAtlas:options.loadAtlas});
   if(disposed)return false;
   preferredPlacement=readPlacement(localStorage);scene=new ServiceScene($('scene'),sprites);fitStage();session=createSession(params.has('seed')?Number(params.get('seed')):seed());

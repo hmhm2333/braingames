@@ -1,12 +1,11 @@
-import {randomSource} from './core.mjs';
+import {createRandom} from '../../runtime/random-state.mjs';
 import {GUEST_IDS,MEAL_IDS} from './content.mjs';
-import {DIFFICULTY} from './progression.mjs';
-export {MEAL_IDS,DIFFICULTY};
+import {DIFFICULTY,RESPONSE_MS,TEACHING_GAP_VISITS} from './progression.mjs';
+export {MEAL_IDS,DIFFICULTY,RESPONSE_MS};
 export const SERVE_MS=1800;
 export const MAX_MISTAKES=3;
-export const RESPONSE_MS=8000;
 export const COUNTER_FLOW=Object.freeze({placeMs:600,homeMs:900,receiveMs:1420,receiveDurationMs:360,handoffMs:1600,refuseMs:1000,cleanupMs:750});
-const OPENING=[0,0,1,0,1,0,1,2];
+const OPENING={3:[0,0,1,0,1,0,1,2],6:[0,1,0,2,3,1,4,5]};
 
 export class RegularsSession{
   constructor({seed=1,guestIds=GUEST_IDS,planMotion,stages=DIFFICULTY}={}){
@@ -14,7 +13,7 @@ export class RegularsSession{
     if(!stages.length||stages.some((s,i)=>!Number.isInteger(s.guests)||s.guests<3||s.guests>6||!Number.isInteger(s.meals)||s.meals<4||s.meals>9||!s.intervals.length||s.intervals.some(k=>![3,4,5].includes(k))||!Number.isInteger(s.evidence)||s.evidence<1||i&&(s.guests<stages[i-1].guests||s.guests>stages[i-1].guests+1||s.meals<stages[i-1].meals||s.meals>stages[i-1].meals+1||s.guests!==stages[i-1].guests&&s.meals!==stages[i-1].meals)))throw RangeError('Invalid progression');
     if(guestIds.length<Math.max(...stages.map(s=>s.guests))||new Set(guestIds).size!==guestIds.length)throw RangeError('Not enough distinct guest models');
     if(typeof planMotion!=='function')throw TypeError('A motion planner is required');
-    this.planMotion=planMotion;this.stages=stages;this.random=randomSource(seed);this.guestOrder=[...this.shuffle(guestIds.slice(0,3)),...this.shuffle(guestIds.slice(3))];
+    this.planMotion=planMotion;this.stages=stages;this.random=createRandom(seed);this.guestOrder=[...this.shuffle(guestIds.slice(0,3)),...this.shuffle(guestIds.slice(3))];
     this.levelIndex=0;this.difficulty=stages[0];this.activeMeals=MEAL_IDS.slice(0,this.difficulty.meals);
     this.pool=this.guestOrder.slice(0,this.difficulty.guests).map(guest=>this.record(guest));
     this.phase='welcome';this.pauseReason=null;this.clockMs=0;this.survivalEndMs=null;this.revision=0;this.nextId=1;this.round=0;this.recent=[];this.openingIndex=0;this.openingComplete=false;
@@ -28,7 +27,8 @@ export class RegularsSession{
   get responseRemainingMs(){return RESPONSE_MS-this.responseElapsedMs;}
   shuffle(values){const a=[...values];for(let i=a.length-1;i>0;i--){const j=Math.floor(this.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
   pick(values){if(!values.length)throw Error('No eligible visitor');return values[Math.floor(this.random()*values.length)];}
-  canServe(){return this.phase==='running'&&!!this.visit&&!this.arrival&&!this.service&&!this.finishRequested;}
+  canSelect(){return this.phase==='running'&&!!this.visit&&!this.service&&!this.finishRequested&&!this.arrival?.choice;}
+  canServe(){return this.canSelect()&&!this.arrival;}
   resetWindow(){this.windowCount=0;this.windowGuests.clear();}
   resetIntervals(){this.intervalPattern=this.shuffle(this.difficulty.intervals);this.intervalIndex=0;this.updateBlocks=0;this.nextChangeEvery=this.intervalPattern[0];this.recallsSinceChange=0;}
   advanceInterval(){
@@ -37,17 +37,24 @@ export class RegularsSession{
     this.nextChangeEvery=this.intervalPattern[this.intervalIndex];
   }
   start(){if(this.phase!=='welcome')return false;this.phase='running';this.prepare();return true;}
-  assign(record,meal){record.previousMeal=record.meal;record.meal=meal;record.version++;record.reviewed=false;record.recallsSinceOrder=0;}
+  assign(record,meal){
+    record.previousMeal=record.meal;record.meal=meal;record.version++;record.reviewed=false;record.recallsSinceOrder=0;
+    this.windowGuests.delete(record.guest);
+  }
   chooseMeal(record,distinct=false){return this.pick(this.activeMeals.filter(meal=>meal!==record.meal&&this.pool.filter(p=>p!==record&&p.meal===meal).length<(distinct?1:2)));}
   recall(exclude=null){
     const available=this.pool.filter(p=>p.meal!==null&&!this.recent.includes(p.guest)&&p.guest!==exclude);
     const load=Math.min(...available.map(p=>p.recallLoad));return this.pick(available.filter(p=>p.recallLoad===load));
   }
   windowReady(){return this.windowCount>=this.difficulty.evidence&&this.windowGuests.size===this.pool.length;}
-  blockReady(){return this.difficulty.axis!=='updating'||this.updateBlocks>0&&this.intervalIndex===0;}
+  updateReady(){return this.difficulty.axis!=='updating'||this.updateBlocks>0||this.intervalIndex>0;}
   canPromote(){return this.levelIndex<this.stages.length-1;}
   enterNextLevel(){
-    const old=this.difficulty;this.difficulty=this.stages[++this.levelIndex];this.activeMeals=MEAL_IDS.slice(0,this.difficulty.meals);this.resetWindow();this.resetIntervals();
+    const old=this.difficulty;this.difficulty=this.stages[++this.levelIndex];this.activeMeals=MEAL_IDS.slice(0,this.difficulty.meals);
+    // Content stages re-use correctly recalled tastes. The faster change cycle checks everyone again.
+    this.windowCount=0;
+    if(this.difficulty.axis==='updating')this.windowGuests.clear();
+    this.resetIntervals();
     for(const p of this.pool)p.recallLoad=0;
     if(this.difficulty.guests>old.guests){
       const p=this.record(this.guestOrder[this.pool.length]);this.pool.push(p);this.assign(p,this.chooseMeal(p));
@@ -60,24 +67,24 @@ export class RegularsSession{
   prepare(){
     let record,kind,stage='regular',changeInterval=null;
     if(!this.openingComplete){
-      const ids=this.pool.length===3?OPENING:this.pool.map((_,i)=>i);
+      const ids=OPENING[this.pool.length]??this.pool.map((_,i)=>i);
       if(this.openingIndex<ids.length){record=this.pool[ids[this.openingIndex++]];kind=record.meal===null?'new':'recall';stage='familiarize';if(kind==='new')this.assign(record,this.chooseMeal(record,this.pool.filter(p=>p.meal!==null).length<3));}
       else{this.openingComplete=true;for(const p of this.pool)p.recallLoad=0;}
     }
     if(!record){
-      if(!this.intro&&this.canPromote()&&this.windowReady()&&this.blockReady()&&this.pool.every(p=>p.recallsSinceOrder>0))this.enterNextLevel();
+      if(!this.intro&&this.canPromote()&&this.windowReady()&&this.updateReady())this.enterNextLevel();
       if(this.intro){
         const intro=this.intro;stage='teach-'+intro.type;
         if(this.completedVisits>=intro.due&&!this.recent.includes(intro.guest)){
           record=this.pool.find(p=>p.guest===intro.guest);kind=intro.cues<intro.cuesNeeded?(intro.cues===0?'new':'hint'):'recall';
         }else{record=this.recall(intro.guest);kind='recall';}
       }else{
-        const settling=this.canPromote()&&this.windowReady()&&this.blockReady();
+        const settling=this.canPromote()&&this.windowCount>=this.difficulty.evidence&&this.updateReady();
         if(!settling&&this.recallsSinceChange>=this.nextChangeEvery){
           record=this.pick(this.pool.filter(p=>p.recallsSinceOrder>0&&!this.recent.includes(p.guest)));kind='change';changeInterval=this.nextChangeEvery;
           this.assign(record,this.chooseMeal(record));this.recallsSinceChange=0;this.advanceInterval();
         }else{
-          const untested=settling?this.pool.filter(p=>p.recallsSinceOrder===0&&!this.recent.includes(p.guest)):[];
+          const untested=settling?this.pool.filter(p=>!this.windowGuests.has(p.guest)&&!this.recent.includes(p.guest)):[];
           record=untested.length?this.pick(untested):this.recall();kind='recall';
         }
       }
@@ -85,9 +92,14 @@ export class RegularsSession{
     this.visit={id:this.nextId++,guest:record.guest,meal:record.meal,kind,hinted:kind!=='recall',stage,level:this.difficulty.level,version:record.version,changeInterval,gapVisits:record.lastVisit===null?null:this.nextId-1-record.lastVisit};
     this.visit.motion=this.planMotion(this.visit);
     if(['arrivalMs','departureMs','withdrawalMs','rejectionMs'].some(key=>!Number.isFinite(this.visit.motion[key])||this.visit.motion[key]<=0))throw RangeError('Motion durations must be positive');
-    this.arrival={elapsedMs:0};this.responseElapsedMs=0;this.revision++;
+    this.arrival={elapsedMs:0,choice:null};this.responseElapsedMs=0;this.revision++;
   }
-  serve(meal){if(!this.canServe()||!this.activeMeals.includes(meal))return false;return this.commit(meal,'choice');}
+  serve(meal){
+    if(!this.canSelect()||!this.activeMeals.includes(meal))return false;
+    if(!this.arrival)return this.commit(meal,'choice');
+    this.arrival.choice=meal;this.revision++;
+    return {queued:true,chosen:meal};
+  }
   commit(meal,reason){
     const v=this.visit,record=this.pool.find(p=>p.guest===v.guest),correct=meal===v.meal;
     const errorType=correct?null:reason==='timeout'?'timeout':meal===record.previousMeal?'old-preference':this.pool.some(p=>p!==record&&p.meal===meal)?'other-guest':'other-choice';
@@ -99,17 +111,19 @@ export class RegularsSession{
       this.stats.recallAttempts++;if(correct)this.stats.correct++;
       if(out.independent)this.stats.independent++;else this.stats.assisted++;
       record.recallsSinceOrder++;record.recallLoad++;record.reviewed=false;
-      if(v.stage==='regular'){
-        this.recallsSinceChange++;this.formalRecalls++;
-        if(out.independent){this.progressDecisions++;if(correct){this.windowCount++;this.windowGuests.add(v.guest);}}
+      if(v.stage==='regular'){this.recallsSinceChange++;this.formalRecalls++;}
+      // A spaced recall can count even during the opening or a new order introduction.
+      if(out.independent&&v.gapVisits>1){
+        this.progressDecisions++;
+        if(correct){this.windowCount++;this.windowGuests.add(v.guest);}
       }
     }else this.stats.learning++;
     if(this.intro?.guest===v.guest){
       const intro=this.intro;
       if(correct){if(v.hinted)intro.cues++;else if(out.independent)intro.recalls++;}
       else{intro.cues=Math.max(0,intro.cuesNeeded-1);intro.recalls=0;}
-      intro.due=this.completedVisits+1+(intro.recalls>0?3:2);
-      if(intro.cues>=intro.cuesNeeded&&intro.recalls>=intro.recallsNeeded){this.intro=null;this.resetWindow();this.resetIntervals();for(const p of this.pool)p.recallLoad=0;}
+      intro.due=this.completedVisits+1+TEACHING_GAP_VISITS;
+      if(intro.cues>=intro.cuesNeeded&&intro.recalls>=intro.recallsNeeded){this.intro=null;this.resetIntervals();for(const p of this.pool)p.recallLoad=0;}
     }
     record.lastVisit=v.id;record.lastResponseMs=this.clockMs;
     const endMs=SERVE_MS+Math.max(v.motion.departureMs,reason==='choice'&&!correct?COUNTER_FLOW.cleanupMs:0);
@@ -125,7 +139,7 @@ export class RegularsSession{
       const step=Math.min(left,boundary);left-=step;this.clockMs+=step;
       if(a)a.elapsedMs+=step;else if(s)s.elapsedMs+=step;else this.responseElapsedMs+=step;
       if(step!==boundary)continue;
-      if(a)this.arrival=null;
+      if(a){this.arrival=null;if(a.choice)this.commit(a.choice,'choice');}
       else if(!s)this.commit(null,'timeout');
       else if(!s.removed)s.removed=true;
       else{
@@ -159,5 +173,5 @@ export class RegularsSession{
     for(const key of Object.keys(s).filter(key=>!['random','planMotion','stages','windowGuests'].includes(key))){if(!Object.hasOwn(state,key))throw Error('Missing G04 checkpoint field '+key);s[key]=structuredClone(state[key]);}
     s.difficulty=s.stages[s.levelIndex];s.windowGuests=new Set(checkpoint.windowGuests);s.random.restore(checkpoint.random);return s;
   }
-  snapshot(){return structuredClone({phase:this.phase,clockMs:this.clockMs,survivedMs:this.survivedMs,revision:this.revision,round:this.round,pool:this.pool,activeMeals:this.activeMeals,intro:this.intro,visit:this.visit,arrival:this.arrival,service:this.service,responseElapsedMs:this.responseElapsedMs,responseRemainingMs:this.responseRemainingMs,responseLimitMs:RESPONSE_MS,difficulty:this.difficulty,progressDecisions:this.progressDecisions,recallsSinceChange:this.recallsSinceChange,nextChangeEvery:this.nextChangeEvery,window:{count:this.windowCount,guests:[...this.windowGuests]},stats:this.stats,lives:this.lives,endReason:this.endReason,canServe:this.canServe(),finishRequested:this.finishRequested});}
+  snapshot(){return structuredClone({phase:this.phase,clockMs:this.clockMs,survivedMs:this.survivedMs,revision:this.revision,round:this.round,pool:this.pool,activeMeals:this.activeMeals,intro:this.intro,visit:this.visit,arrival:this.arrival,service:this.service,responseElapsedMs:this.responseElapsedMs,responseRemainingMs:this.responseRemainingMs,responseLimitMs:RESPONSE_MS,difficulty:this.difficulty,progressDecisions:this.progressDecisions,recallsSinceChange:this.recallsSinceChange,nextChangeEvery:this.nextChangeEvery,window:{count:this.windowCount,guests:[...this.windowGuests]},stats:this.stats,lives:this.lives,endReason:this.endReason,canServe:this.canServe(),canSelect:this.canSelect(),finishRequested:this.finishRequested});}
 }

@@ -1,5 +1,5 @@
 import {createRandom} from '../../runtime/random-state.mjs';
-import {BUBBLE_PROFILES,bubbleChance} from './bubble-prd.mjs';
+import {BUBBLE_PROFILES,FORBIDDEN_FOOD_RATE,bubbleChance} from './bubble-prd.mjs';
 import {ENDLESS,DIFFICULTY,FOOD_IDS,PICKY_CUE_MS,difficultyForCorrect} from './rules.mjs';
 export {ENDLESS,DIFFICULTY};
 export const MEAL_PRESENTATION=Object.freeze({storedMs:625,durationMs:750});
@@ -34,7 +34,7 @@ export function createSession({seed=1,sequence=null,checkpoint=null}={}){
     const draw=kinds(),appearance=variants(),wrap=wrapping(),forced=supplied?.[slot];
     const profile=BUBBLE_PROFILES[config.picky?'picky':'intro'],chance=bubbleChance(profile,bubbleWait,bubbleStreak);
     let material=draw<chance?'bubble':'food';
-    if(material==='food'&&config.picky&&(draw-chance)/(1-chance)<.10/(1-profile.target))material='forbidden';
+    if(material==='food'&&config.picky&&(draw-chance)/(1-chance)<FORBIDDEN_FOOD_RATE/(1-profile.target))material='forbidden';
     if(forced)material=forced==='rice'?'food':forced==='forbidden'?'forbidden':'bubble';
     if(material==='bubble'){bubbleWait=0;bubbleStreak=Math.min(2,bubbleStreak+1);}else{bubbleWait++;bubbleStreak=0;}
     if(material==='forbidden'&&!config.picky)throw Error('A forbidden QA item requires the picky rule');
@@ -46,7 +46,7 @@ export function createSession({seed=1,sequence=null,checkpoint=null}={}){
     current={id:`${id}:${++slot}`,slot,level:config.level,kind,foodId,material,wrapped,shouldCatch:material==='food',variant:kind==='rice'?FOOD_IDS.indexOf(foodId):Math.floor(appearance*6),onsetMs:clockMs,deadlineMs:clockMs+config.flightMs,nextAtMs:clockMs+config.flightMs+gapMs,gapMs,responded:false,result:null,spawnU:positions(),mealReady:false,mealFormAtMs:null,mealCollectAtMs:null,presentationEndAtMs:null,deadlineProcessed:false,mealFormed:false,mealCollected:false};
     stats[material==='food'?'foodPresented':material==='forbidden'?'forbiddenPresented':material==='wrapped'?'wrappedPresented':'emptyBubblePresented']++;
     if(previous&&previous.level!==config.level)emit('level_changed',{level:config.level,correct:correctCount()});
-    emit('item_spawn',{item:viewCurrent(),cadence:previous?{previousLevel:previous.level,previousMaterial:previous.material,requestedGapMs:previous.gapMs,onsetIntervalMs:clockMs-previous.onsetMs,pickyIntroIncluded:previous.level===1&&config.level===2}:null});
+    emit('item_spawn',{item:viewCurrent(),cadence:previous?{previousLevel:previous.level,previousMaterial:previous.material,requestedGapMs:previous.gapMs,onsetIntervalMs:clockMs-previous.onsetMs,pickyIntroIncluded:config.picky&&!DIFFICULTY[previous.level-1].picky}:null});
   }
   function nextSupply(){
     if(supplied&&slot>=supplied.length){end('sequence_complete');return;}

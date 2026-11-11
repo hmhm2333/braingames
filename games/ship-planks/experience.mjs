@@ -1,5 +1,6 @@
 import {GAME_COPY,SHARED_COPY} from '../../runtime/game-catalog.mjs';
 import {applyCopy} from '../../runtime/apply-copy.mjs';
+import {mountControlGuide} from '../../runtime/control-guide.mjs';
 const copy=GAME_COPY['planks-g02'];
 import {RepairSession,INTRO_PATCH,MAX_LIVES,CONTACT_MS,ANSWER_MS,WARNING_MS,randomSource,rotateCells} from './core.mjs';
 import {RepairScene,LAYOUT,drawWood,siteBox,leakPoint,loadWhale} from './scene.mjs';
@@ -166,7 +167,9 @@ export function mountGame(host,options={}){
   const [markup,,font,whale]=await Promise.all([options.ui?options.ui.markup:fetch(new URL('./markup.html',import.meta.url)).then(r=>{if(!r.ok)throw Error('补船界面加载失败');return r.text();}),styleReady,face.load(),loadWhale(options)]);
   if(disposed){whale.image.close?.();return false;}
   document.fonts.add(font);root.innerHTML=markup;
-  applyCopy(root,{'#welcome .rules>div:first-child span':copy.rules[0],'#welcome .rules>div:last-child span':copy.rules[1],'#start':copy.start,'#result h2':copy.resultLead,'#result .number>span':copy.resultUnit,'#result .best>span:first-child':copy.bestLabel,'#replay':copy.replay,'#random':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload':SHARED_COPY.reload});session=new RepairSession();scene=new RepairScene($('scene'),whale,$('companion'),$('clock-occluder'));
+  applyCopy(root,{'#welcome .rules>div:first-child span':copy.rules[0],'#welcome .rules>div:last-child span':copy.rules[1],'#start':copy.start,'#result h2':copy.resultLead,'#result .number>span':copy.resultUnit,'#result .best>span:first-child':copy.bestLabel,'#replay':copy.replay,'#random':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload':SHARED_COPY.reload});
+  mountControlGuide(root,copy.control);
+  session=new RepairSession();scene=new RepairScene($('scene'),whale,$('companion'),$('clock-occluder'));
   for(let i=0;i<MAX_LIVES;i++){
    const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 9 8');icon.setAttribute('aria-hidden','true');Object.assign(icon.style,{left:(LIFE_POINTS[i][0]-MAST.x+40-9)+'px',top:(LIFE_POINTS[i][1]-MAST.y+40-8)+'px'});
    for(const [name,d]of [['heart-edge','M0 1H1V0H4V1H5V0H8V1H9V4H8V5H7V6H6V7H5V8H4V7H3V6H2V5H1V4H0Z'],['heart-fill','M1 2H2V1H3V2H6V1H7V2H8V4H7V5H6V6H5V7H4V6H3V5H2V4H1Z'],['heart-glint','M2 2H3V3H2Z']]){const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('class',name);path.setAttribute('d',d);icon.append(path);} $('lives').append(icon);

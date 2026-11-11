@@ -1,3 +1,5 @@
+import {MAX_MENU_HALF_WIDTH} from './layout.mjs';
+
 export const PLACEMENT_KEY='braingames.g04.stage-anchor.v1';
 export function readPlacement(storage){
   const raw=storage.getItem(PLACEMENT_KEY);if(raw===null)return null;
@@ -9,7 +11,7 @@ export function savePlacement(storage,anchor,width,height){
   const value={x:anchor[0]/width,y:anchor[1]/height};storage.setItem(PLACEMENT_KEY,JSON.stringify(value));return value;
 }
 export function placementBounds(phase,viewport,dialogHeight=0){
-  if(!['welcome','summary'].includes(phase))return{left:-131,right:261,top:-176,bottom:182};
+  if(!['welcome','summary'].includes(phase))return{left:-MAX_MENU_HALF_WIDTH,right:MAX_MENU_HALF_WIDTH,top:-176,bottom:182};
   const left=viewport.panel.left-viewport.scene.whale[0],right=left+viewport.panel.width,lobbyX=right+viewport.companionWidth/2;
   const centre=viewport.height/2-viewport.scene.whale[1],bottom=centre+dialogHeight/2;
   return{left:Math.min(left,lobbyX-80),right:Math.max(right,lobbyX+80),top:Math.min(centre-dialogHeight/2,bottom-184),bottom};

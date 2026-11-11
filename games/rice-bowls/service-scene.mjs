@@ -47,15 +47,9 @@ export class ServiceScene{
     ctx.save();if(a.mirror){ctx.translate(p[0]*2,0);ctx.scale(-1,1);}
     this.sprites.crop(ctx,a.frame,p[0]+(f.trim[0]-f.anchor[0])*scale,p[1]+(f.trim[1]-f.anchor[1])*scale,f.trim[2]*scale,f.trim[3]*scale);ctx.restore();
   }
-  guestHeight(guest){const m=this.sprites.manifest,meta=m.guests[guest],f=m.frames[meta.clips['pet-idle'][0]];return(f.anchor[1]-f.trim[1])*meta.nativeScale;}
-  cueBox(guest,motion){
-    const v=this.viewport,p=motionRoute(this.layout,this.sprites.manifest.guests[guest],motion.lane).stop;
-    if(motion.face==='back')return{left:Math.round(Math.max(12,Math.min(v.width-104,(p[0]+(motion.mirror?-56:56))*v.pixelScale-(motion.mirror?92:0)))),top:Math.round(Math.max(12,(this.layout.whale[1]-170)*v.pixelScale))};
-    return{left:Math.round(Math.max(12,Math.min(v.width-104,p[0]*v.pixelScale-46))),top:Math.round(Math.max(12,(p[1]-this.guestHeight(guest))*v.pixelScale-92))};
-  }
   dish(id,p,size){this.sprites.fit(this.ctx,'meal/'+id,p[0]-size/2,p[1]-size*.77,size,size*.82);}
   counter(layer,root){
-    const id='counter/'+(layer==='front'&&this.viewport.menu.columns===3?'front-wide':layer),f=this.sprites.manifest.frames[id];
+    const id='counter/'+layer,f=this.sprites.manifest.frames[id];
     this.sprites.crop(this.ctx,id,root[0]+f.trim[0]-f.anchor[0],root[1]+f.trim[1]-f.anchor[1],f.trim[2],f.trim[3]);
   }
   verdict(motion,correct,age,bodyRoot){

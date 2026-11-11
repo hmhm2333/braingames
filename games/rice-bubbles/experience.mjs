@@ -1,5 +1,6 @@
 import {GAME_COPY,SHARED_COPY} from '../../runtime/game-catalog.mjs';
 import {applyCopy} from '../../runtime/apply-copy.mjs';
+import {mountControlGuide} from '../../runtime/control-guide.mjs';
 const copy=GAME_COPY['rice-bubbles-g10'];
 import {createSession} from './core.mjs';
 import {FOOD_TYPES} from './rules.mjs';
@@ -224,14 +225,15 @@ const initialization=(async()=>{
  try{
   const [text]=await Promise.all([ui?ui.markup:fetch(new URL('./markup.html',import.meta.url)).then(response=>{if(!response.ok)throw Error(`游戏界面加载失败 (${response.status})`);return response.text();}),pixelFace.load(),styleReady]);
   if(disposed)return false;const template=document.createElement('template');template.innerHTML=text;root.replaceChildren(...template.content.firstElementChild.childNodes);markupLoaded=true;
-  applyCopy(root,{'#loading-panel h1':copy.loading,'#start-button span':copy.start,'#welcome-panel kbd':copy.rules[0],'#welcome-panel .rule-action':copy.rules[1],'#result-title':copy.resultLead,'#result-panel .survival-result>span':copy.resultUnit,'#result-panel .best-label':copy.bestLabel,'#again-button':copy.replay,'#back-button':SHARED_COPY.next,'#error-title':copy.loadError,'#reload-button':SHARED_COPY.reload});
+  applyCopy(root,{'#loading-panel h1':copy.loading,'#start-button span':copy.start,'#welcome-panel .rule:first-child .rule-action':copy.rules[0],'#welcome-panel .rule:last-child .rule-action':copy.rules[1],'#result-title':copy.resultLead,'#result-panel .survival-result>span':copy.resultUnit,'#result-panel .best-label':copy.bestLabel,'#again-button':copy.replay,'#back-button':SHARED_COPY.next,'#error-title':copy.loadError,'#reload-button':SHARED_COPY.reload});
+  mountControlGuide(root,copy.control);
   document.fonts.add(pixelFace);pixelText=createPixelText(root);root.dataset.font='loaded';
   for(const img of root.querySelectorAll('img[src]'))img.src=ui?ui.icons[img.getAttribute('src')]:new URL(img.getAttribute('src'),import.meta.url).href;
   const resumeButton=document.createElement('button');resumeButton.id='resume-whale';resumeButton.type='button';resumeButton.tabIndex=-1;resumeButton.hidden=true;resumeButton.dataset.gameResume='';resumeButton.setAttribute('aria-label','点击鲸鱼娘继续游戏');Object.assign(resumeButton.style,{position:'absolute',border:'none',padding:'0',background:'transparent',cursor:'pointer',zIndex:'12'});root.append(resumeButton);
   on(resumeButton,'pointerdown',event=>event.preventDefault());on(resumeButton,'click',event=>{event.preventDefault();if(frozenVisible)void options.onResume();});
   scene=new WhaleScene($('scene-root'),{assetsBase:options.assetsBase??new URL('./assets/g10/',import.meta.url),manifest:options.manifest,loadAtlas:options.loadAtlas,bounds:()=>({width:host.clientWidth,height:host.clientHeight})});
 on($('start-button'),'click',startGame);on($('again-button'),'click',startGame);
-on($('back-button'),'click',()=>options.onRandom());on($('reload-button'),'click',()=>{void options.onReload().catch(fail);});
+on($('back-button'),'click',()=>{if(canRandom)void options.onRandom().catch(fail);});on($('reload-button'),'click',()=>{void options.onReload().catch(fail);});
 if(!options.onRandom)$('back-button').hidden=true;
 if(options.onRandom){$('back-button').textContent=SHARED_COPY.next;$('back-button').disabled=!options.canRandom;}
 on(root,'keydown',keydown);on(window,'keyup',keyup,{capture:true});
