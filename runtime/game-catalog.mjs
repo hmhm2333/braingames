@@ -70,6 +70,27 @@ export const GAME_COPY={
       "看准手头木板",
       "点同形状破洞"
     ]
+  },
+  "balloon-winds": {
+    "title": "顺风摘星",
+    "shortTitle": "摘星",
+    "invite": "风正好，去摘一颗星？",
+    "start": "出发摘星",
+    "replay": "再飞一趟",
+    "loading": "正在吹起热气球",
+    "loadError": "气球没准备好",
+    "resultLead": "这趟摘到了",
+    "resultUnit": "颗星",
+    "bestLabel": "最高记录",
+    "control": {
+      "device": "鼠标",
+      "key": "左键·右键",
+      "action": "加风·减风"
+    },
+    "rules": [
+      "左键加风",
+      "右键减风"
+    ]
   }
 };
 export const GAME_METADATA=[
@@ -105,5 +126,16 @@ export const GAME_METADATA=[
     ],
     "interaction": "鼠标单击破口",
     "description": "想象手持木板旋转后的轮廓，从船上多个不同破口中选出同形者；选择前不显示旋转放置过程。"
+  },
+  {
+    "id": "balloon-winds",
+    "icon": "balloon",
+    "trainingProcesses": [
+      "带符号心算",
+      "横纵坐标差计算",
+      "多步位移规划"
+    ],
+    "interaction": "鼠标左键加位移，右键减位移",
+    "description": "根据热气球和星星的坐标差，在几朵云里选择多次横纵位移。左键加风，右键减风，逐步算到目标坐标。"
   }
 ].map(game=>({...game,name:GAME_COPY[game.id].title,hint:GAME_COPY[game.id].invite,action:GAME_COPY[game.id].start}));

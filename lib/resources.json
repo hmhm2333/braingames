@@ -22,5 +22,11 @@
     "type": "image/png",
     "bytes": 217834,
     "sha256": "ce1d9baa87fefe5a5f2692a05c1c0c57b69e02b78cc5b2defde4036fae8c225d"
+  },
+  {
+    "name": "winds/e43208c3ca0a0d3888ef.png",
+    "type": "image/png",
+    "bytes": 512866,
+    "sha256": "e43208c3ca0a0d3888ef7024dcc5cd8d00b476c923b76bffd8b2c4301d798cc9"
   }
 ]

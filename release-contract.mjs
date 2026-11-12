@@ -1,6 +1,7 @@
 
 // Runtime projections are explicit: artist provenance stays in the source tree.
 export const GAME_ASSET_FIELDS={
+  winds:['fps','end','dockFrame','pushFrame','landingFrame','smileFrame','layers','atlas'],
   g04:['version','image','width','height','decodedBytes','frames','groups','clips','guests','mealImages','docks','counter'],
   g02:['image','width','height','clips','frames']
 };

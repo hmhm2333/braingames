@@ -12,7 +12,8 @@ export function createTransparentStage(container,options={}){
   const frozenTabStops=new Map();
   let shortcutYield=false;
   let visible=false,retainVisible=options.keepVisibleOnPause===true;
-  const gameKeys=options.keys;
+  const gameKeys=options.keys, suppressContextMenu=options.suppressContextMenu===true;
+  let menuPointer=null;
   let foreground=false,disposed=false,disposing=false,activation=0,previousFocus=null,disposePromise=null,game;
   const keyId=e=>e.code||({' ':'Space',Escape:'Escape',Enter:'Enter',Tab:'Tab'}[e.key]??e.key);
   const inside=e=>e.composedPath().includes(wrapper);
@@ -92,7 +93,9 @@ export function createTransparentStage(container,options={}){
     // A fresh down proves that an earlier sequence (possibly released while
     // the window was blurred) has ended. Do not swallow this new task click.
     heldPointers.delete(e.pointerId);clickTails.delete(e.pointerId);
-    if(inside(e)){if(document.activeElement!==wrapper)previousFocus=document.activeElement;if(foreground)heldPointers.add(e.pointerId);return;}
+    const inStage=inside(e);
+    if(suppressContextMenu)menuPointer=inStage&&e.button===2?e.pointerId:null;
+    if(inStage){if(document.activeElement!==wrapper)previousFocus=document.activeElement;if(foreground)heldPointers.add(e.pointerId);return;}
     if(!foreground)return;
     // Pass the same trusted event to the actual task: never replay a click.
     background('task-pointer',{restoreFocus:false});
@@ -101,8 +104,15 @@ export function createTransparentStage(container,options={}){
     if(!heldPointers.delete(e.pointerId))return;
     if(!foreground){clickTails.add(e.pointerId);consume(e);}
   },{capture:true});
-  on(window,'pointercancel',e=>{heldPointers.delete(e.pointerId);clickTails.delete(e.pointerId);},{capture:true});
+  on(window,'pointercancel',e=>{heldPointers.delete(e.pointerId);clickTails.delete(e.pointerId);if(menuPointer===e.pointerId)menuPointer=null;},{capture:true});
   on(window,'click',e=>{if(clickTails.delete(e.pointerId))consume(e);},{capture:true});
+  if(suppressContextMenu)on(window,'contextmenu',e=>{
+    // The menu can arrive after pointer-up, with the task as its target.
+    const startedOnStage=e.button===2&&e.pointerId===menuPointer;
+    menuPointer=null;
+    if(inside(e))e.preventDefault();
+    else if(startedOnStage)consume(e);
+  },{capture:true});
   on(window,'wheel',e=>{if(foreground&&!inside(e))background('task-scroll',{restoreFocus:false});},{capture:true,passive:true});
   on(document,'focusin',e=>{if(foreground&&e.target instanceof HTMLElement&&!inside(e))background('task-focus',{restoreFocus:false});},{capture:true});
   // iframe focus also blurs the parent window. Electron webview exposes its
@@ -111,7 +121,7 @@ export function createTransparentStage(container,options={}){
   on(window,'blur',()=>{modifiers.clear();shortcutYield=false;for(const key of heldKeys)uncertainKeys.add(key);background('window-blur',{restoreFocus:false});});
   on(window,'compositionstart',()=>{if(foreground)background('composition');},{capture:true});
   on(document,'visibilitychange',()=>{if(document.hidden){for(const key of heldKeys)uncertainKeys.add(key);background('hidden',{restoreFocus:false});}});
-  for(const type of['keydown','keyup','pointerdown','pointerup','click','dblclick','auxclick','contextmenu','beforeinput','input'])on(wrapper,type,e=>{if(foreground)e.stopPropagation();});
+  for(const type of['keydown','keyup','pointerdown','pointerup','click','dblclick','auxclick','contextmenu','beforeinput','input'])on(wrapper,type,e=>{if(foreground||(suppressContextMenu&&type==='contextmenu'))e.stopPropagation();});
   game=options.mountGame(gameHost,{assetsBase:options.assetsBase,ui:options.ui,manifest:options.manifest,loadAtlas:options.loadAtlas,checkpoint:options.checkpoint,presented:false,qa:options.qa===true,
     onResume:()=>bringToForeground({resume:true,start:false}),
     beforePlay:async()=>{if(!foreground)await bringToForeground({resume:false});return foreground&&!disposing;},
