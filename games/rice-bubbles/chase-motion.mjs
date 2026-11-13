@@ -1,5 +1,7 @@
 export const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 const mix=(a,b,t)=>a+(b-a)*t;
+const FALL_ACCELERATION=.4;
+const FALL_INITIAL_SPEED=1-FALL_ACCELERATION;
 
 export function sourceGeometry(manifest){
   const frames=new Map(manifest.frames.map(f=>[f.id,f])),extents={left:Infinity,right:-Infinity,top:Infinity,bottom:-Infinity},contacts=[];
@@ -17,12 +19,15 @@ export function makePlayfield({width,height,scale,extents,contacts}){
 // The response window is the complete visible fall, ending at ground contact.
 // Visual footprint is supplied by the renderer; the kernel stays viewport-independent.
 export function dropPoint(item,time,field,objectBottom){
-  const progress=Math.max(0,(time-item.onsetMs)/(item.deadlineMs-item.onsetMs));
+  const t=Math.max(0,(time-item.onsetMs)/(item.deadlineMs-item.onsetMs));
+  const progress=t*(FALL_INITIAL_SPEED+FALL_ACCELERATION*t);
   return[mix(field.left,field.right,item.spawnU),mix(field.top,field.bottom-objectBottom,progress)];
 }
 export function floorImpactTime(item){return item.deadlineMs;}
 export function fallExitTime(item,field,radius){
-  return item.onsetMs+(field.height+radius-field.top)/(field.bottom-radius-field.top)*(item.deadlineMs-item.onsetMs);
+  const progress=(field.height+radius-field.top)/(field.bottom-radius-field.top);
+  const t=2*progress/(FALL_INITIAL_SPEED+Math.sqrt(FALL_INITIAL_SPEED**2+4*FALL_ACCELERATION*progress));
+  return item.onsetMs+t*(item.deadlineMs-item.onsetMs);
 }
 
 // A committed choice is visibly locked while the whale approaches. The short

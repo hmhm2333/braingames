@@ -3,12 +3,16 @@ import {LEAK_ORIGINS,DECK_CELLS,separated,walkPath} from './sampan.mjs';
 import {SIZE,rotateCells,familyOf,matchingRotations,shapeDistance} from './shape-math.mjs';
 import {PATCHES,chooseChain,taskLoad} from './materials.mjs';
 import {Progression,STAGES} from './progression.mjs';
+import {DIFFICULTY_CONFIG} from './difficulty.mjs';
 export {SIZE,rotateCells,familyOf,matchingRotations,shapeDistance,PATCHES,STAGES};
 export const CONTACT_MS=420;
 export const MOTION_MS=780;
 export const GROW_MS=240;
-export const ANSWER_MS=7000;
-export const WARNING_MS=2000;
+export const ANSWER_MS=DIFFICULTY_CONFIG.answerMs;
+export const WARNING_MS=DIFFICULTY_CONFIG.warningMs;
+if(!Number.isInteger(ANSWER_MS)||ANSWER_MS<1||!Number.isInteger(WARNING_MS)||WARNING_MS<0||WARNING_MS>=ANSWER_MS){
+  throw new RangeError('补船 difficulty.mjs 的提醒时间须小于作答时间');
+}
 export const MAX_LIVES=3;
 export const INTRO_PATCH=PATCHES.find(p=>p.cells.length===STAGES[0].cells);
 const weighted=(weights,random)=>{let roll=random();for(let i=0;i<weights.length;i++){roll-=weights[i];if(roll<0)return i;}return weights.length-1;};
@@ -26,7 +30,7 @@ export class RepairSession{
   for(const origin of origins){const site={id:this.nextSiteId,x:origin.x,y:origin.y,...material,chain,wait:0},sites=[...this.sites,site];if(sites.every(s=>walkPath(s,sites))){this.nextSiteId++;return site;}}
   throw Error('No reachable space for another leak');
  }
- start(){if(this.phase!=='welcome')return false;this.phase='running';while(this.sites.length<2)this.sites.push(this.makeSite());this.deal();this.revision++;return true;}
+ start(){if(this.phase!=='welcome')return false;this.phase='running';while(this.sites.length<this.progress.current.holes)this.sites.push(this.makeSite());this.deal();this.revision++;return true;}
  deal(){
   const intro=this.stats.tasks===0;for(const site of this.sites)site.wait++;
   const overdue=this.sites.filter(s=>s.wait>=this.sites.length*2+2),available=overdue.length?overdue:this.sites,wanted=this.wantedLoad();

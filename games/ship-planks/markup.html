@@ -10,12 +10,15 @@
 </div>
 <div id="lobby" class="lobby">
   <canvas id="companion" width="200" height="200" aria-hidden="true"></canvas>
-  <section id="welcome" class="paper" hidden aria-label="补船前">
+  <section id="welcome" class="paper" hidden aria-labelledby="game-title">
+    <h1 id="game-title" data-braingames-title data-pixel-text></h1>
     <div class="rules"><div><canvas id="rule-brick" width="72" height="64" aria-hidden="true"></canvas><span data-pixel-text>看这块板</span></div><div><canvas id="rule-sites" width="72" height="64" aria-hidden="true"></canvas><span data-pixel-text>点同形破口</span></div></div>
+    <p data-braingames-controls></p>
     <button id="start" class="primary" type="button" data-pixel-text>补船</button>
   </section>
-  <section id="result" class="paper" hidden aria-label="这次补船的小结">
-    <h2 data-pixel-text>这次补好了</h2>
+  <section id="result" class="paper" hidden aria-labelledby="game-result-title">
+    <h2 id="game-result-title" data-braingames-title data-pixel-text></h2>
+    <p id="result-lead" data-pixel-text>这次补好了</p>
     <p class="number"><strong id="result-value" data-pixel-text>0</strong><span data-pixel-text>块船板</span></p>
     <p class="best"><span data-pixel-text>最佳记录</span><span><strong id="best-value" data-pixel-text>0</strong><span data-pixel-text>块</span></span></p>
     <div class="actions"><button id="replay" class="primary" data-pixel-text>再补一趟</button><button id="random" class="secondary" data-pixel-text hidden>随机一个</button></div>

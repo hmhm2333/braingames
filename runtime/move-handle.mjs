@@ -22,7 +22,7 @@ export function createMoveHandle(button,callbacks){
       if(press!==current)return;
       timer=setTimeout(()=>{
         timer=null;if(press!==current)return;press.active=true;button.dataset.dragging='true';
-        try{callbacks.onActivate();callbacks.onMove(press.lastX-press.x,press.lastY-press.y);}catch(error){fail(error);}
+        try{callbacks.onActivate();if(press===current)callbacks.onMove(current.lastX-current.x,current.lastY-current.y);}catch(error){fail(error);}
       },HOLD_TO_MOVE_MS);
     }catch(error){fail(error);}
   });

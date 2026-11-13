@@ -3,7 +3,10 @@ export const ARRIVAL_TURN_MS=160;
 export const DEPARTURE_TURN_MS=160;
 export const STEP_IN_MS=180;
 export const TOP_STEP_CYCLES=3;
-export const MAX_TRAVEL_MS=1800;
+export const ARRIVAL_MS=1250;
+export const DEPARTURE_MS=950;
+const MENU_COLUMN_STEP=130;
+export const MAX_MENU_HALF_WIDTH=(3*MENU_COLUMN_STEP+2)/2;
 export function menuGrid(count){
   if(!Number.isInteger(count)||count<4||count>9)throw RangeError('Meal grid supports 4 to 9 choices');
   return{rows:count===4?2:3,columns:count<=6?2:3};
@@ -12,17 +15,22 @@ export function menuSlot(index){if(!Number.isInteger(index)||index<0||index>8)th
 export function viewportLayout(width,height,mealCount=4,anchor=null){
   const pixelScale=1,margin=16,gap=24,grid=menuGrid(mealCount);
   const menuHeight=grid.rows*42+(grid.rows-1)*2+6+22;
-  const menuWidth=grid.columns*128+(grid.columns-1)*2+4;
+  const menuWidth=grid.columns*MENU_COLUMN_STEP+2;
   const maxMenuHeight=3*42+4+6+22;
   const heroX=width/2,ground=Math.floor(Math.min((height+232-maxMenuHeight-gap)/2,height-margin-maxMenuHeight-gap));
-  // Keep the first two columns anchored. A third is a right-hand counter leaf.
   const offset=anchor?[Math.round(anchor[0]-heroX),Math.round(anchor[1]-ground)]:[0,0];
-  const menu={left:Math.round((width-262)/2)+offset[0],top:ground+gap+offset[1],width:menuWidth,height:menuHeight,...grid};
+  const menu={left:Math.round((width-menuWidth)/2)+offset[0],top:ground+gap+offset[1],width:menuWidth,height:menuHeight,...grid};
+  const hudLeft=Math.round(heroX-MENU_COLUMN_STEP-1)+offset[0];
   const panelWidth=280,companionWidth=200;
   const panelLeft=Math.max(margin,(width-panelWidth-companionWidth)/2);
-  return{width,height,pixelScale,fontSize:18,lineHeight:24,menu,companionWidth,offset,
+  return{width,height,pixelScale,fontSize:18,lineHeight:24,menu,hudLeft,companionWidth,offset,
     panel:{left:even(panelLeft)+offset[0],width:panelWidth},
     scene:{width:Math.ceil(width/pixelScale),height:Math.ceil(height/pixelScale),whale:[heroX+offset[0],ground+offset[1]],controls:{left:menu.left,top:menu.top,width:menu.width,height:menu.height}}};
+}
+export function orderCueRect(layout,motion){
+  const [x,y]=layout.whale;
+  // The tile sits on the inside of the guest's route, clear of both sprites.
+  return{left:Math.round(x+(motion.mirror?-104:104)-28),top:Math.round(y-(motion.face==='back'?166:114)),width:56,height:52};
 }
 const LANES=[['left','side',true],['left','down',true],['right','side',false],['right','down',false],['back','down',true],['back','down',false]];
 export function motionRoute(layout,meta,lane,departure=false){
@@ -37,7 +45,8 @@ export function motionRoute(layout,meta,lane,departure=false){
   const distanceToEdge=Math.min(...ray.map((v,i)=>Math.abs(v)<1e-6?Infinity:(bounds[i][v>0?1:0]-stop[i])/v));
   const stride=direction.stridePx*meta.nativeScale,cycles=Math.ceil(distanceToEdge/stride),distance=cycles*stride;
   const outside=stop.map((v,i)=>v+ray[i]*distance);
-  return{start:departure?stop:outside,end:departure?outside:stop,stop,waiting,contact,view,mirror,face,dock,cycles,durationMs:Math.min(cycles*meta.cycleMs,MAX_TRAVEL_MS)};
+  const durationMs=departure?DEPARTURE_MS-DEPARTURE_TURN_MS:ARRIVAL_MS-ARRIVAL_TURN_MS;
+  return{start:departure?stop:outside,end:departure?outside:stop,stop,waiting,contact,view,mirror,face,dock,cycles,durationMs};
 }
 export function availableLanes(layout,meta){
   return LANES.map((_,lane)=>lane).filter(lane=>{

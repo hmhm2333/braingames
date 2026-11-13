@@ -1,0 +1,129 @@
+@font-face {
+  font-family: "BrainGames Popup";
+  src: url("data:font/ttf;base64,__BRAINGAMES_POPUP_FONT__") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+.braingames-popup {
+  box-sizing: border-box;
+  padding: 14px;
+  color-scheme: light;
+  color: #263248;
+  background: #f6f0dd;
+  border: 2px solid #263248;
+  border-radius: 0;
+  box-shadow: inset 2px 2px 0 #fffbed, inset -2px -2px 0 #d8ccb1, 4px 4px 0 #0e172c55;
+  font: 400 18px/24px "BrainGames Popup", "Songti SC", SimSun, serif;
+  font-synthesis: none;
+}
+
+[data-braingames-invitation] {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(292px, calc(100vw - 24px));
+  z-index: 9600;
+}
+
+[data-braingames-invitation]::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  right: 24px;
+  width: 16px;
+  height: 8px;
+  background: #263248;
+  clip-path: polygon(0 6px, 4px 6px, 4px 3px, 6px 3px, 6px 0, 10px 0, 10px 3px, 12px 3px, 12px 6px, 100% 6px, 100% 100%, 0 100%);
+}
+
+[data-braingames-error] {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: min(340px, calc(100% - 48px));
+  pointer-events: auto;
+}
+
+.braingames-popup-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+
+.braingames-popup-message > img { margin-top: 2px; }
+.braingames-popup-detail { margin: 0 0 12px; font-size: 16px; overflow-wrap: anywhere; }
+.braingames-popup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.braingames-popup-actions button {
+  flex: 1 0 auto;
+  padding: 4px 10px;
+  color: inherit;
+  background: #efe6cb;
+  border: 2px solid #aa9a79;
+  border-radius: 0;
+  box-shadow: inset 0 2px 0 #fffbed, 0 2px 0 #aa9a79;
+  font: inherit;
+  cursor: pointer;
+}
+.braingames-popup-actions button:first-child {
+  background: #f3d391;
+  border-color: #9f8355;
+  box-shadow: inset 0 2px 0 #ffe9b6, 0 2px 0 #9f8355;
+}
+.braingames-popup-actions button:hover { background: #f8dc9e; }
+.braingames-popup-actions button:focus-visible { outline: 2px solid #263248; outline-offset: 2px; }
+.braingames-popup-actions button:active { transform: translateY(2px); box-shadow: none; }
+
+.braingames-popup [data-pixel-text] { position: relative; display: inline-block; }
+.braingames-popup [data-pixel-ready] { -webkit-text-fill-color: transparent; }
+.braingames-popup [data-pixel-ready]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--pixel-label) 0 0 / var(--pixel-label-size) no-repeat;
+  image-rendering: pixelated;
+}
+
+[data-braingames-settings] { max-width: 640px; line-height: 1.5; }
+.braingames-settings-form, .braingames-setting {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.braingames-settings-form > legend { padding: 0; font-size: 16px; font-weight: 600; }
+.braingames-settings-form h4 { margin: 14px 0 8px; font-size: 14px; font-weight: 600; }
+.braingames-game-pool { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.braingames-game-pool label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.braingames-settings-group {
+  margin-top: 14px;
+  border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+.braingames-setting + .braingames-setting { margin-top: 12px; }
+.braingames-setting > legend { padding: 0; margin-bottom: 4px; font-size: 13px; }
+.braingames-setting-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 6px;
+}
+.braingames-setting-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid color-mix(in srgb, currentColor 19%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.braingames-setting-options label:has(input:checked) {
+  border-color: color-mix(in srgb, currentColor 60%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.braingames-setting-options label:focus-within { outline: 1px solid currentColor; }
+.braingames-settings-form input { flex: none; margin: 0; }
+.braingames-setting-note { margin: 5px 0 0; font-size: 12px; opacity: .76; }
+.braingames-settings-error { color: #b33; }

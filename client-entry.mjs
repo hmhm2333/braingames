@@ -4,11 +4,12 @@ import {createTaskAttentionMonitor} from './task-attention.mjs';
 import {createGameRuntime} from './runtime/session-runtime.mjs';
 import {GAME_CATALOG} from './games.mjs';
 import {SHARED_COPY} from './runtime/game-catalog.mjs';
-import {gameIconUrl} from './runtime/game-icons.mjs';
 import {createRefreshStore} from './runtime/refresh-store.mjs';
+import {GameIcon,GameSettings,PixelPopup,SETTINGS_FIELDS} from './host-ui.mjs';
 
 export const inject=['slots','sessions','uiSession','connection','remote','shortcuts','configForms'];
 const h=React.createElement,PACKAGE='dsh-braingames';
+const hostUiCss=__BRAINGAMES_HOST_UI_CSS__;
 
 export function apply(ctx){
   let container=null,unloaded=false,resolveHost;
@@ -79,7 +80,7 @@ export function apply(ctx){
   for(const source of[ctx.shortcuts.catalog,ctx.shortcuts.config])ctx.effect(()=>source.subscribe(()=>{reconcileGuard();refresh();}),'BrainGames input bindings');
   const run=action=>{openError='';void action().catch(report);};
   const button={font:'inherit',fontSize:13,padding:'5px 10px',border:'1px solid color-mix(in srgb,currentColor 22%,transparent)',borderRadius:6,background:'transparent',color:'inherit',cursor:'pointer'};
-  function GameIcon({icon='brain'}={}){return h('img',{width:20,height:20,src:gameIconUrl(icon),alt:'','aria-hidden':true,style:{imageRendering:'pixelated',flexShrink:0}});}
+  const pixelLabel=text=>h('span',{'data-pixel-text':true},text);
   function TaskEntry({sessionId}={}){
     React.useSyncExternalStore(store.subscribe,store.getSnapshot);
     React.useEffect(()=>{currentSessionId=sessionId??null;return()=>{if(currentSessionId===sessionId)currentSessionId=null;};},[sessionId]);
@@ -90,10 +91,11 @@ export function apply(ctx){
         disabled:s.loading||!s.ready||!s.canStart&&!s.hasRound,
         title:!s.canStart&&!s.hasRound?'请在插件设置中勾选游戏':active?.name??SHARED_COPY.appLabel,
         onClick:()=>run(()=>api.open())},h(GameIcon,{icon:active?.icon}),label),
-      s.presentation==='waiting'?h('aside',{'data-braingames-invitation':true,'aria-label':'BrainGames 邀请',style:{position:'absolute',top:'calc(100% + 8px)',right:0,width:248,padding:14,border:'1px solid #c5aa75',borderRadius:6,background:'Canvas',color:'CanvasText',boxShadow:'0 4px 14px #0002',zIndex:9600}},
-        h('p',{style:{margin:'0 0 12px',fontSize:14}},hasRunning?SHARED_COPY.invite:'歇一小会儿，来一局？'),
-        h('div',{style:{display:'flex',gap:8}},h('button',{'data-braingames-accept':true,type:'button',style:button,onClick:()=>run(()=>api.open())},SHARED_COPY.inviteAccept),
-          h('button',{'data-braingames-dismiss':true,type:'button',style:button,onClick:()=>runtime.dismissInvitation()},SHARED_COPY.inviteDismiss))):null);
+      s.presentation==='waiting'?h(PixelPopup,{'data-braingames-invitation':true,'aria-label':'BrainGames 邀请'},
+        h('p',{className:'braingames-popup-message'},h(GameIcon),pixelLabel(hasRunning?SHARED_COPY.invite:SHARED_COPY.inviteIdle)),
+        h('div',{className:'braingames-popup-actions'},
+          h('button',{'data-braingames-accept':true,type:'button',onClick:()=>run(()=>api.open())},pixelLabel(SHARED_COPY.inviteAccept)),
+          h('button',{'data-braingames-dismiss':true,type:'button',onClick:()=>runtime.dismissInvitation()},pixelLabel(SHARED_COPY.inviteDismiss)))):null);
   }
   async function savePreference(field,value){
     saving=true;settingsError='';refresh();
@@ -101,46 +103,24 @@ export function apply(ctx){
     catch(error){settingsError=error.message;}
     finally{saving=false;refresh();}
   }
-  const switches=[
-    ['autoInvite','自动弹出游戏邀请','关闭后仍可从任务标题栏打开游戏。'],
-    ['inviteRequireRunning','只有任务正在运行时才邀请','仅限制自动邀请；不限制手动打开。'],
-    ['inviteRequireNoUnread','有未读的任务完成提醒时不邀请','使用 DSH 当前客户端的任务完成提醒。'],
-    ['keepVisibleOnPause','操作 DSH 时保留凝滞的游戏画面','游戏不计时、不接收操作；点鲸鱼娘继续。关闭后收起舞台，从标题栏继续。'],
-    ['keepOnRefresh','刷新页面后保留本局','只保留到当前 DSH 运行结束；重启后重新开始。'],
-    ['recommendByTask','用默认模型根据当前任务选择游戏','新开一局或换游戏时调用一次 DSH 默认模型；读取当前任务最近六条用户文字，最多四千字。关闭后随机选择，续局不调用。']
-  ];
   function Settings(){
     React.useSyncExternalStore(store.subscribe,store.getSnapshot);
-    const state=preferences.getSnapshot(),value=state.value;
-    if(state.status!=='ready')return h('p',{role:'status'},state.status==='loading'?'设置加载中…':'BrainGames 设置不可用。');
-    return h('section',{'data-braingames-settings':true,style:{maxWidth:560,lineHeight:1.7}},
-      h('h3',{style:{fontSize:16,margin:'0 0 16px'}},'游戏设置'),
-      h('fieldset',{disabled:!state.writable||saving,style:{border:0,padding:0,margin:0}},
-        h('legend',{style:{padding:0,marginBottom:10}},'允许开始的游戏'),
-        ...GAME_CATALOG.map(game=>h('label',{key:game.id,style:{display:'flex',alignItems:'center',gap:10,marginBottom:10}},
-          h('input',{type:'checkbox','data-braingames-game':game.id,checked:value.enabledGames.includes(game.id),onChange:event=>{
-            const ids=event.target.checked?[...value.enabledGames,game.id]:value.enabledGames.filter(id=>id!==game.id);
-            void savePreference('enabledGames',ids);
-          }}),h(GameIcon,{icon:game.icon}),game.name)),
-        h('p',{style:{fontSize:12,opacity:.7,margin:'8px 0 22px'}},'至少勾选两款，结算后才能“换个玩”。不勾选时不再开新局；已经开始的一局可以继续。'),
-        ...switches.map(([field,label,description])=>h('div',{key:field,style:{marginBottom:18}},
-          h('label',{style:{display:'flex',alignItems:'center',gap:10}},h('input',{type:'checkbox','data-braingames-setting':field,...(field==='autoInvite'?{'data-braingames-auto-invite':true}:{}),checked:value[field],onChange:event=>{void savePreference(field,event.target.checked);}}),label),
-          h('p',{style:{fontSize:12,opacity:.7,margin:'4px 0 0 24px'}},description)))),
-      saving?h('p',{role:'status'},'保存中…'):null,
-      !state.writable?h('p',{role:'status'},'当前设置为只读。'):null,
-      settingsError?h('p',{role:'alert',style:{color:'#b33'}},settingsError):null);
+    return h(GameSettings,{catalog:GAME_CATALOG,state:preferences.getSnapshot(),saving,error:settingsError,onChange:savePreference});
   }
   function StageHost(){
     React.useSyncExternalStore(store.subscribe,store.getSnapshot);
     const ref=React.useRef(null);
     React.useEffect(()=>{container=ref.current;resolveHost(container);return()=>{container=null;};},[]);
     const s=runtime.status(),error=bootError||openError||s.error;
-    return h('div',{'data-braingames-overlay':true,style:{position:'absolute',inset:0,pointerEvents:'none',zIndex:9500}},h('div',{ref,style:{position:'absolute',inset:0}}),error?h('aside',{'data-braingames-error':true,role:'alert',style:{position:'absolute',right:24,top:24,maxWidth:320,padding:16,background:'#f6f0dd',color:'#764b45',pointerEvents:'auto',border:'2px solid #9c8060',fontSize:13}},
-      s.selectionFailed?h('p',{style:{margin:'0 0 8px'}},SHARED_COPY.chooseError):null,
-      h('p',{style:{margin:'0 0 12px'}},error),
-      h('div',{style:{display:'flex',gap:8}},
-        h('button',{'data-braingames-action':true,type:'button',style:button,onClick:()=>run(()=>bootError?resumeError?api.discardSavedRound():api.retryBoot():api.retrySelection())},bootError?resumeError?'放弃存档，重新开始':'重试':s.selectionFailed?SHARED_COPY.chooseRetry:SHARED_COPY.reload),
-        !bootError&&s.selectionFailed?h('button',{'data-braingames-action':true,type:'button',style:button,onClick:()=>run(()=>api.retrySelection({random:true}))},SHARED_COPY.chooseRandom):null)) :null);
+    return h('div',{'data-braingames-overlay':true,style:{position:'absolute',inset:0,pointerEvents:'none',zIndex:9500}},
+      h('style',null,hostUiCss),h('div',{ref,style:{position:'absolute',inset:0}}),
+      error?h(PixelPopup,{'data-braingames-error':true,role:'alert'},
+        s.selectionFailed?h('p',{className:'braingames-popup-message'},pixelLabel(SHARED_COPY.chooseError)):null,
+        h('p',{className:'braingames-popup-detail'},pixelLabel(error)),
+        h('div',{className:'braingames-popup-actions'},
+          h('button',{'data-braingames-action':true,type:'button',onClick:()=>run(()=>bootError?resumeError?api.discardSavedRound():api.retryBoot():api.retrySelection())},
+            pixelLabel(bootError?(resumeError?SHARED_COPY.discardSavedRound:SHARED_COPY.retry):s.selectionFailed?SHARED_COPY.chooseRetry:SHARED_COPY.reload)),
+          !bootError&&s.selectionFailed?h('button',{'data-braingames-action':true,type:'button',onClick:()=>run(()=>api.retrySelection({random:true}))},pixelLabel(SHARED_COPY.chooseRandom)):null)) :null);
   }
   const runtime=createGameRuntime({games:GAME_CATALOG,enabledGameIds:[],autoInvite:false,onChange:refresh,onInputGuardChange:setGuard,
     async chooseGame(candidates,{signal}){
@@ -208,7 +188,7 @@ export function apply(ctx){
     preferencesReady=state.status==='ready';
     if(preferencesReady){
       resolvePreferences();const signature=JSON.stringify(state.value);
-      if(signature!==preferenceSignature){preferenceSignature=signature;const value=state.value;runtime.configure({enabledGameIds:value.enabledGames,...Object.fromEntries(switches.map(([field])=>[field,value[field]]))});if(!value.keepOnRefresh)refreshStore?.clear();}
+      if(signature!==preferenceSignature){preferenceSignature=signature;const value=state.value;runtime.configure({enabledGameIds:value.enabledGames,...Object.fromEntries(SETTINGS_FIELDS.map(field=>[field,value[field]]))});if(!value.keepOnRefresh)refreshStore?.clear();}
     }
     changed('preferences');refresh();
   }

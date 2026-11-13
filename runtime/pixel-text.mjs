@@ -1,6 +1,6 @@
 // Shared pixel labels keep their real text for layout and accessibility.
 // Only their painted glyphs are replaced by a native 12px, one-bit bitmap.
-export function createPixelText(root){
+export function createPixelText(root,{alphaThreshold=48}={}){
   let pending=null,disposed=false,presented=true;
   function paint(label){
     if(!label.getClientRects().length||!label.firstChild)return;
@@ -28,7 +28,7 @@ export function createPixelText(root){
     const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
     // This bundled serif has thin anti-aliased strokes at 12px. Preserve them
     // when quantizing to one bit (128 erased most of the Chinese strokes).
-    for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=pixels.data[i]>=48?255:0;
+    for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=pixels.data[i]>=alphaThreshold?255:0;
     ctx.putImageData(pixels,0,0);
     label.style.setProperty('--pixel-label','url("'+canvas.toDataURL()+'")');
     label.style.setProperty('--pixel-label-size',canvas.width*scale+'px '+canvas.height*scale+'px');

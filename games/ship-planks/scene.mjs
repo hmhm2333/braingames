@@ -62,7 +62,7 @@ export class RepairScene{
   c.save();traceHull(c,11);c.clip();
   for(let yy=24;yy<244;yy+=20){c.fillStyle=(yy/20|0)%2?'#c6aa7d':'#c1a377';c.fillRect(12,yy,376,19);c.fillStyle='#a98d62';for(let x=24+(yy/20|0)%2*42;x<390;x+=84)c.fillRect(x,yy+8,16,1);}
   const patches=new Map();for(const p of s.deck){if(!p.stamp)continue;if(!patches.has(p.stamp))patches.set(p.stamp,[]);patches.get(p.stamp).push([(p.x-16)/10,(p.y-26)/10]);}
-  for(const cells of patches.values())drawWood(c,cells,16,26,10);
+  for(const cells of patches.values())drawWood(c,cells,16,26,10,.4);
   for(const site of s.sites)hole(c,site.cells,site.x,site.y);
   if(s.growth){c.fillStyle='#f3d391';c.globalAlpha=1-s.growth.elapsedMs/GROW_MS;for(const[x,y]of s.growth.additions)c.fillRect(x+2,y+2,6,6);c.globalAlpha=1;}
   if(s.motion?.correct&&s.motion.elapsedMs>=CONTACT_MS)drawWood(c,s.motion.cells,s.motion.x,s.motion.y,10);
