@@ -46,7 +46,7 @@ kbd{display:block;min-width:82px;text-align:center;background:#ebe2cb;border:2px
 .dialog-panel{width:240px;top:50%;left:50%;transform:translate(-50%,-50%)}
 .dialog-actions{display:grid;gap:8px}
 .result-panel{width:var(--panel-width);left:calc((100% - var(--panel-width) - var(--companion-width)) / 2);transform:translateY(-50%)}
-.result-panel h2{text-align:center;color:var(--muted)}
+#result-title{text-align:center;color:var(--muted)}
 .survival-result{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0 16px}
 .survival-result img{width:20px;height:20px;margin-right:4px}
 .survival-result strong{min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}

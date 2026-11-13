@@ -4,7 +4,8 @@
     <h1 data-pixel-text>鱼还在找碗</h1>
     <span class="loading-mark" aria-hidden="true"><i></i><i></i><i></i></span>
   </section>
-  <section id="welcome-panel" class="paper welcome-panel" aria-label="饭可以，泡泡不行" hidden>
+  <section id="welcome-panel" class="paper welcome-panel" aria-labelledby="game-title" hidden>
+    <h1 id="game-title" data-braingames-title data-pixel-text></h1>
     <div class="rules" aria-label="饭按空格，泡泡不按键">
       <div class="rule"><svg class="glyph" id="rice-legend" width="48" height="48" role="img" aria-label="饭"></svg><span class="rule-action" data-pixel-text>食物接住</span></div>
       <div class="rule"><svg class="glyph" id="bubble-legend" width="48" height="48" role="img" aria-label="泡泡"></svg><span class="rule-action" data-pixel-text>泡泡放过</span></div>
@@ -13,8 +14,9 @@
     <button id="start-button" class="primary" type="button"><span data-pixel-text>开饭</span><img src="./ui/icons/arrow-right.svg" width="24" height="24" alt=""></button>
   </section>
   <p id="feedback" class="sr-only" role="status" aria-live="polite"></p>
-  <section id="result-panel" class="paper dialog-panel result-panel" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
-    <h2 id="result-title" data-pixel-text>这次吃了</h2>
+  <section id="result-panel" class="paper dialog-panel result-panel" role="dialog" aria-modal="true" aria-labelledby="game-result-title" hidden>
+    <h2 id="game-result-title" data-braingames-title data-pixel-text></h2>
+    <p id="result-title" data-pixel-text>这次吃了</p>
     <p class="survival-result" aria-live="polite"><img src="./ui/icons/clock.svg" width="24" height="24" alt=""><strong id="elapsed-value" data-pixel-text>0</strong><span data-pixel-text>秒</span></p>
     <p class="best-result"><span class="best-label" data-pixel-text>最佳记录</span><span class="best-time"><strong id="best-value" data-pixel-text>0</strong><span data-pixel-text>秒</span></span></p>
     <div class="dialog-actions"><button id="again-button" class="primary" type="button" data-pixel-text>再吃一顿</button><button id="back-button" class="secondary" type="button" data-pixel-text>不吃了</button></div>

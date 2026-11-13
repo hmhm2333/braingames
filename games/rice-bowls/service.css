@@ -39,6 +39,7 @@
 
 
 .welcome,.summary{top:calc(50% + var(--core-offset-y,0px))}
+#result-lead{text-align:center;color:var(--muted)}
 #move-whale{position:absolute;z-index:3;margin:0;padding:0;border:0;outline:none;background:transparent;box-shadow:none;cursor:grab;touch-action:none}
 #move-whale[data-dragging='true']{cursor:grabbing}
 .stage[data-moving='true'] #order{visibility:hidden}

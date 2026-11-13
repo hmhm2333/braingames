@@ -14,7 +14,7 @@ const GUEST_NAME_MS=800;
 
 export function mountGame(host,options={}){
   if(!(host instanceof HTMLElement))throw TypeError('Game host must be an HTMLElement');
-  const shadow=host.attachShadow({mode:'open'}),root=document.createElement('main');root.id='game';root.className='stage';root.dataset.phase='loading';root.setAttribute('aria-label','老样子：记住客人的餐点');
+  const shadow=host.attachShadow({mode:'open'}),root=document.createElement('main');root.id='game';root.className='stage';root.dataset.phase='loading';root.setAttribute('aria-label',copy.title);
   const style=document.createElement(options.ui?'style':'link');
   const styleReady=options.ui?Promise.resolve():new Promise((resolve,reject)=>{style.onload=resolve;style.onerror=()=>reject(Error('游戏样式加载失败'));});
   if(options.ui)style.textContent=options.ui.style;else{style.rel='stylesheet';style.href=new URL('./service.css',import.meta.url).href;}
@@ -198,8 +198,8 @@ function availability(){if(!session)return;const small=!playableSize(root.client
 async function init(){
   const markup=options.ui?options.ui.markup:await (async()=>{const response=await fetch(new URL('./service-markup.html',import.meta.url));if(!response.ok)throw Error('游戏界面加载失败 ('+response.status+')');return response.text();})();
   root.innerHTML=markup;
-  applyCopy(root,{'#welcome .rule:first-child>span':copy.rules[0],'#welcome .rule:last-child>span':copy.rules[1],'#start span':copy.start,'#summary h2':copy.resultLead,'#summary .customer-result>span':copy.resultUnit,'#summary .best-result>span:first-child':copy.bestLabel,'#replay span':copy.replay,'#random span':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload span':SHARED_COPY.reload});
-  mountControlGuide(root,copy.control);
+  applyCopy(root,{'#welcome .rule:first-child>span':copy.rules[0],'#welcome .rule:last-child>span':copy.rules[1],'#start span':copy.start,'#result-lead':copy.resultLead,'#summary .customer-result>span':copy.resultUnit,'#summary .best-result>span:first-child':copy.bestLabel,'#replay span':copy.replay,'#random span':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload span':SHARED_COPY.reload});
+  mountControlGuide(root,copy);
   await styleReady;await pixelFace.load();document.fonts.add(pixelFace);pixelText=createPixelText(root);
   sprites=await loadSprites({manifest:options.manifest,loadAtlas:options.loadAtlas});
   if(disposed)return false;

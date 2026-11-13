@@ -470,7 +470,7 @@ export function mountGame(host, options) {
       '#start': copy.start, '#result-lead': copy.resultLead, '#unit': copy.resultUnit,
       '#best-label': copy.bestLabel, '#replay': copy.replay, '#random': SHARED_COPY.next,
       '#load-error': copy.loadError, '#reload': SHARED_COPY.reload});
-    mountControlGuide(root, copy.control);
+    mountControlGuide(root, copy);
     drawRuleArt($('rule-add'), $('rule-subtract'), art);
     scene = makeScene($('canvas'), art);
     const stored = localStorage.getItem(bestKey);

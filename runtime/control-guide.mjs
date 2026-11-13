@@ -1,5 +1,6 @@
 // Shared input instructions for the welcome panels, inside each game's shadow.
-export function mountControlGuide(root, {device, key, action}) {
+export function mountControlGuide(root, {title, control: {device, key, action}}) {
+  for (const heading of root.querySelectorAll('[data-braingames-title]')) heading.textContent = title;
   const guide = root.querySelector('[data-braingames-controls]');
   const labels = [['span', device], ['kbd', key], ['span', action]];
   guide.replaceChildren(...labels.map(([tag, text]) => {
@@ -11,6 +12,9 @@ export function mountControlGuide(root, {device, key, action}) {
 
   const style = document.createElement('style');
   style.textContent = `
+    #game-title, #game-result-title {
+      margin: 0 0 12px; font: inherit; text-align: center; color: var(--ink);
+    }
     [data-braingames-controls] {
       display: flex; align-items: center; justify-content: center; gap: 8px;
       margin: 0 0 12px; line-height: 24px; white-space: nowrap;

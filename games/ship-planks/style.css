@@ -24,6 +24,7 @@
 .stage[data-viewport-blocked='true'] .leak-drop{animation-play-state:paused}
 .lobby{position:absolute;left:50%;top:50%;width:480px;height:280px;transform:translate(-50%,-50%);pointer-events:none}
 .lobby .paper{left:0}.lobby .status{left:100px}
+#result-lead{text-align:center;color:var(--muted)}
 #companion{position:absolute;left:280px;top:40px;width:200px;height:200px;pointer-events:none}
 .stage[data-view='loading'] #companion,.stage[data-view='error'] #companion{display:none}
 .stage[data-urgent='true'] .leak-drop{background:#d4a36b;animation-duration:.45s}

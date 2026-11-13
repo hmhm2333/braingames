@@ -167,8 +167,8 @@ export function mountGame(host,options={}){
   const [markup,,font,whale]=await Promise.all([options.ui?options.ui.markup:fetch(new URL('./markup.html',import.meta.url)).then(r=>{if(!r.ok)throw Error('补船界面加载失败');return r.text();}),styleReady,face.load(),loadWhale(options)]);
   if(disposed){whale.image.close?.();return false;}
   document.fonts.add(font);root.innerHTML=markup;
-  applyCopy(root,{'#welcome .rules>div:first-child span':copy.rules[0],'#welcome .rules>div:last-child span':copy.rules[1],'#start':copy.start,'#result h2':copy.resultLead,'#result .number>span':copy.resultUnit,'#result .best>span:first-child':copy.bestLabel,'#replay':copy.replay,'#random':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload':SHARED_COPY.reload});
-  mountControlGuide(root,copy.control);
+  applyCopy(root,{'#welcome .rules>div:first-child span':copy.rules[0],'#welcome .rules>div:last-child span':copy.rules[1],'#start':copy.start,'#result-lead':copy.resultLead,'#result .number>span':copy.resultUnit,'#result .best>span:first-child':copy.bestLabel,'#replay':copy.replay,'#random':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload':SHARED_COPY.reload});
+  mountControlGuide(root,copy);
   session=new RepairSession();scene=new RepairScene($('scene'),whale,$('companion'),$('clock-occluder'));
   for(let i=0;i<MAX_LIVES;i++){
    const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 9 8');icon.setAttribute('aria-hidden','true');Object.assign(icon.style,{left:(LIFE_POINTS[i][0]-MAST.x+40-9)+'px',top:(LIFE_POINTS[i][1]-MAST.y+40-8)+'px'});

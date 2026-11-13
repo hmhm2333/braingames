@@ -226,7 +226,7 @@ const initialization=(async()=>{
   const [text]=await Promise.all([ui?ui.markup:fetch(new URL('./markup.html',import.meta.url)).then(response=>{if(!response.ok)throw Error(`游戏界面加载失败 (${response.status})`);return response.text();}),pixelFace.load(),styleReady]);
   if(disposed)return false;const template=document.createElement('template');template.innerHTML=text;root.replaceChildren(...template.content.firstElementChild.childNodes);markupLoaded=true;
   applyCopy(root,{'#loading-panel h1':copy.loading,'#start-button span':copy.start,'#welcome-panel .rule:first-child .rule-action':copy.rules[0],'#welcome-panel .rule:last-child .rule-action':copy.rules[1],'#result-title':copy.resultLead,'#result-panel .survival-result>span':copy.resultUnit,'#result-panel .best-label':copy.bestLabel,'#again-button':copy.replay,'#back-button':SHARED_COPY.next,'#error-title':copy.loadError,'#reload-button':SHARED_COPY.reload});
-  mountControlGuide(root,copy.control);
+  mountControlGuide(root,copy);
   document.fonts.add(pixelFace);pixelText=createPixelText(root);root.dataset.font='loaded';
   for(const img of root.querySelectorAll('img[src]'))img.src=ui?ui.icons[img.getAttribute('src')]:new URL(img.getAttribute('src'),import.meta.url).href;
   const resumeButton=document.createElement('button');resumeButton.id='resume-whale';resumeButton.type='button';resumeButton.tabIndex=-1;resumeButton.hidden=true;resumeButton.dataset.gameResume='';resumeButton.setAttribute('aria-label','点击鲸鱼娘继续游戏');Object.assign(resumeButton.style,{position:'absolute',border:'none',padding:'0',background:'transparent',cursor:'pointer',zIndex:'12'});root.append(resumeButton);

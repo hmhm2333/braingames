@@ -21,7 +21,7 @@ export const SHARED_COPY={
 };
 export const GAME_COPY={
   "rice-bubbles-g10": {
-    "title": "干饭不吃泡",
+    "title": "吃白饭吐泡泡",
     "shortTitle": "接饭",
     "invite": "鱼饿了，帮我接两口饭？",
     "start": "开饭",
@@ -38,7 +38,7 @@ export const GAME_COPY={
     ]
   },
   "regulars-g04": {
-    "title": "还是老样子",
+    "title": "大肥鱼茶餐厅",
     "shortTitle": "上菜",
     "invite": "熟客上门了，帮我记下菜？",
     "start": "上菜",
@@ -55,7 +55,7 @@ export const GAME_COPY={
     ]
   },
   "planks-g02": {
-    "title": "这船还能开",
+    "title": "忒修斯之渔船",
     "shortTitle": "补船",
     "invite": "船又漏了，搭把手呗？",
     "start": "补船",
@@ -72,7 +72,7 @@ export const GAME_COPY={
     ]
   },
   "balloon-winds": {
-    "title": "顺风摘星",
+    "title": "大肥鱼热气球",
     "shortTitle": "摘星",
     "invite": "风正好，去摘一颗星？",
     "start": "出发摘星",
