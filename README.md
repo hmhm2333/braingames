@@ -59,9 +59,9 @@
 
 ## 安装
 
-目标宿主为 **DeepSeek Harness `0.2.2-rc.1`**。本页介绍包含四款游戏的 **BrainGames `0.28.8`**。在 DSH 中发送下面这句，从对应分支安装并启用插件。
+目标宿主为 **DeepSeek Harness `0.2.2-rc.1`**。从本仓库安装的是包含四款游戏的 **BrainGames `0.28.8`**。在 DSH 中发送下面这句即可安装并启用插件。
 
-> 请安装并启用 dsh-braingames，来源：`github:hmhm2333/braingames#codex/balloon-winds-0.28.7`
+> 请安装并启用 dsh-braingames，来源：https://github.com/hmhm2333/braingames
 
 也可以在 DSH 的「插件」页面填写同一个来源。装好后，点击**任务标题栏中文件按钮左侧的游戏图标**。没有正在运行的任务时也能手动开局。
 
@@ -73,10 +73,10 @@
 
 ```bash
 # 桌面端
-dsh plugin --profile desktop add "github:hmhm2333/braingames#codex/balloon-winds-0.28.7" --ignore-scripts
+dsh plugin --profile desktop add github:hmhm2333/braingames --ignore-scripts
 
 # Web 端
-dsh plugin --profile web add "github:hmhm2333/braingames#codex/balloon-winds-0.28.7" --ignore-scripts
+dsh plugin --profile web add github:hmhm2333/braingames --ignore-scripts
 ```
 
 </details>
