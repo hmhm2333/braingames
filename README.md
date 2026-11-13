@@ -1,12 +1,12 @@
 <div align="center">
 
-<h1>BrainGames</h1>
+<h1>dsh-braingames</h1>
 
 <p>在 DeepSeek Harness（DSH）里，等 Agent 执行任务时做几分钟认知训练。</p>
 
 <p>
   <a href="#安装"><img src="assets/readme/badge-dsh.svg" alt="DeepSeek Harness 0.2.2-rc.1" /></a>
-  <a href="https://github.com/hmhm2333/braingames/blob/HEAD/LICENSE.txt"><img src="assets/readme/badge-mit.svg" alt="MIT License" /></a>
+  <a href="https://github.com/hmhm2333/dsh-braingames/blob/HEAD/LICENSE.txt"><img src="assets/readme/badge-mit.svg" alt="MIT License" /></a>
 </p>
 
 <p>
@@ -15,7 +15,7 @@
   <a href="#为什么做认知训练">为什么做认知训练</a> ·
   <a href="#游戏与训练目标">游戏与训练目标</a> ·
   <a href="#设置">设置</a> ·
-  <a href="https://github.com/hmhm2333/braingames/issues">问题反馈</a>
+  <a href="https://github.com/hmhm2333/dsh-braingames/issues">问题反馈</a>
 </p>
 
 </div>
@@ -23,7 +23,7 @@
 **Agent 跑任务 → 做几轮练习 → 切回工作时暂停 → 下个空档继续。** 游戏叠在 DSH 的透明舞台上，点击空白处仍能操作工作区。
 
 <p align="center">
-  <img src="assets/readme/workspace.webp" alt="BrainGames 在 DeepSeek Harness 中的界面" width="900" />
+  <img src="assets/readme/workspace.webp" alt="dsh-braingames 在 DeepSeek Harness 中的界面" width="900" />
   <br />
   <sub>DeepSeek Harness 实机画面 · 大肥鱼热气球</sub>
 </p>
@@ -40,7 +40,7 @@
 
 **认知老化与能力维持。** ACTIVE 随机试验中，接受推理训练或加工速度训练的老年参与者，十年后在各自的目标能力上仍可测到训练效果。
 
-**痴呆风险。** WHO 2026 年指南将认知训练和认知刺激纳入降低痴呆风险的建议，面向认知正常或有轻度认知障碍的成年人。ACTIVE 的 20 年随访发现，完成特定加工速度训练及加强训练的老年参与者，痴呆诊断风险低于对照组。后续重分析提示结果受统计方法影响。BrainGames 的游戏分数反映当局表现，长期健康效果需要另行验证。
+**痴呆风险。** WHO 2026 年指南将认知训练和认知刺激纳入降低痴呆风险的建议，面向认知正常或有轻度认知障碍的成年人。ACTIVE 的 20 年随访发现，完成特定加工速度训练及加强训练的老年参与者，痴呆诊断风险低于对照组。后续重分析提示结果受统计方法影响。dsh-braingames 的游戏分数反映当局表现，长期健康效果需要另行验证。
 
 **怎么练。** 类似健身，每组先确定练哪个动作，然后反复做、看反馈，再增加难度。这里加的可以是要记住的顾客数，也可以是更短的作答时间。等 Agent 的几分钟里，可以做完一小组，再接着工作。
 
@@ -59,9 +59,9 @@
 
 ## 安装
 
-目标宿主为 **DeepSeek Harness `0.2.2-rc.1`**。从本仓库安装的是包含四款游戏的 **BrainGames `0.28.8`**。在 DSH 中发送下面这句即可安装并启用插件。
+目标宿主为 **DeepSeek Harness `0.2.2-rc.1`**。从本仓库安装的是包含四款游戏的 **dsh-braingames `0.28.8`**。在 DSH 中发送下面这句即可安装并启用插件。
 
-> 请安装并启用 dsh-braingames，来源：https://github.com/hmhm2333/braingames
+> 请安装并启用 dsh-braingames，来源：https://github.com/hmhm2333/dsh-braingames
 
 也可以在 DSH 的「插件」页面填写同一个来源。装好后，点击**任务标题栏中文件按钮左侧的游戏图标**。没有正在运行的任务时也能手动开局。
 
@@ -73,10 +73,10 @@
 
 ```bash
 # 桌面端
-dsh plugin --profile desktop add github:hmhm2333/braingames --ignore-scripts
+dsh plugin --profile desktop add github:hmhm2333/dsh-braingames --ignore-scripts
 
 # Web 端
-dsh plugin --profile web add github:hmhm2333/braingames --ignore-scripts
+dsh plugin --profile web add github:hmhm2333/dsh-braingames --ignore-scripts
 ```
 
 </details>
@@ -97,4 +97,4 @@ dsh plugin --profile web add github:hmhm2333/braingames --ignore-scripts
 
 ## 许可
 
-原创代码采用 MIT 许可。角色、字体和其他第三方素材按各自许可分发。 [MIT 许可](https://github.com/hmhm2333/braingames/blob/HEAD/LICENSE.txt) · [第三方许可与署名](https://github.com/hmhm2333/braingames/blob/HEAD/THIRD_PARTY_NOTICES.md)
+原创代码采用 MIT 许可。角色、字体和其他第三方素材按各自许可分发。 [MIT 许可](https://github.com/hmhm2333/dsh-braingames/blob/HEAD/LICENSE.txt) · [第三方许可与署名](https://github.com/hmhm2333/dsh-braingames/blob/HEAD/THIRD_PARTY_NOTICES.md)

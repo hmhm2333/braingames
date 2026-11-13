@@ -3,8 +3,8 @@
   "version": "0.28.8",
   "private": true,
   "license": "MIT",
-  "homepage": "https://github.com/hmhm2333/braingames",
-  "description": "BrainGames for DSH: a gentle single-player game while tasks run",
+  "homepage": "https://github.com/hmhm2333/dsh-braingames",
+  "description": "dsh-braingames for DSH: a gentle single-player game while tasks run",
   "type": "module",
   "main": "host.mjs",
   "exports": {
@@ -69,9 +69,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hmhm2333/braingames.git"
+    "url": "git+https://github.com/hmhm2333/dsh-braingames.git"
   },
   "bugs": {
-    "url": "https://github.com/hmhm2333/braingames/issues"
+    "url": "https://github.com/hmhm2333/dsh-braingames/issues"
   }
 }
