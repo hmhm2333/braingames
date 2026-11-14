@@ -1,15 +1,18 @@
 <main id="experience" class="game-root" data-view="loading">
-  <div id="scene-root" tabindex="0" role="application" aria-label="接饭小游戏：饭按空格，泡泡不按键"></div>
+  <div id="scene-root" tabindex="0" role="application" aria-describedby="rice-input-rule"></div>
   <section id="loading-panel" class="paper status-panel" aria-live="polite" aria-busy="true">
     <h1 data-pixel-text>鱼还在找碗</h1>
     <span class="loading-mark" aria-hidden="true"><i></i><i></i><i></i></span>
   </section>
   <section id="welcome-panel" class="paper welcome-panel" aria-labelledby="game-title" hidden>
     <h1 id="game-title" data-braingames-title data-pixel-text></h1>
-    <div class="rules" aria-label="饭按空格，泡泡不按键">
-      <div class="rule"><svg class="glyph" id="rice-legend" width="48" height="48" role="img" aria-label="饭"></svg><span class="rule-action" data-pixel-text>食物接住</span></div>
-      <div class="rule"><svg class="glyph" id="bubble-legend" width="48" height="48" role="img" aria-label="泡泡"></svg><span class="rule-action" data-pixel-text>泡泡放过</span></div>
+    <div class="rules">
+      <div class="rule"><svg class="glyph" id="rice-legend" width="48" height="48" aria-hidden="true"></svg><span class="rule-action" data-pixel-text></span></div>
+      <div class="rule"><svg class="glyph" id="bubble-legend" width="48" height="48" aria-hidden="true"></svg><span class="rule-action" data-pixel-text></span></div>
+      <div class="rule"><svg class="glyph" id="wrapped-legend" width="48" height="48" aria-hidden="true"></svg><span class="rule-action" data-pixel-text></span></div>
+      <div class="rule"><svg class="glyph" id="picky-legend" width="48" height="48" aria-hidden="true"></svg><span class="rule-action" data-pixel-text></span></div>
     </div>
+    <p id="rice-input-rule" class="rule-note"></p>
     <p data-braingames-controls></p>
     <button id="start-button" class="primary" type="button"><span data-pixel-text>开饭</span><img src="./ui/icons/arrow-right.svg" width="24" height="24" alt=""></button>
   </section>

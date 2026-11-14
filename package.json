@@ -1,6 +1,6 @@
 {
   "name": "dsh-braingames",
-  "version": "0.28.8",
+  "version": "0.30.0",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/hmhm2333/dsh-braingames",
@@ -25,6 +25,7 @@
     "lib/client.g04.js",
     "lib/client.g02.js",
     "lib/client.winds.js",
+    "lib/client.fish.js",
     "lib/resources.json",
     "lib/assets/**/*.png",
     "lib/FONT-LICENSE.txt",
@@ -57,6 +58,9 @@
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.1"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-connection": "0.2.2-rc.1",

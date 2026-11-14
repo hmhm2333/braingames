@@ -24,6 +24,16 @@ export function mountControlGuide(root, {title, control: {device, key, action}})
       font: inherit; color: #263248; background: #fff8e4;
       border: 2px solid #9f8355; border-radius: 0; box-shadow: 0 2px 0 #9f8355;
     }
+
+    [data-game-record-notice]:not([hidden]) {
+      display: grid; justify-items: center; gap: 4px; margin-top: 8px;
+      font: 400 12px/17px system-ui, sans-serif; text-align: center;
+    }
+    [data-game-record-notice] button:not([hidden]) {
+      max-width: 100%; min-height: 24px; padding: 2px 6px; color: inherit; font: inherit;
+      background: transparent; border: 1px solid currentColor; cursor: pointer;
+    }
+    [data-game-record-notice] button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
   `;
   root.prepend(style);
 }

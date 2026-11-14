@@ -30,12 +30,13 @@ strong,h1,h2{font-weight:400}
   top:50%;transform:translateY(-50%);
 }
 h1,h2{font-size:inherit;line-height:24px;letter-spacing:0}
-.rules{display:grid;grid-template-columns:1fr 1fr;margin:0 0 20px;padding:4px 0 8px}
-.rule{display:flex;flex-direction:column;align-items:center;gap:12px}
-.rule+.rule{border-left:2px solid var(--paper-low)}
+.rules{display:grid;grid-template-columns:1fr 1fr;row-gap:7px;margin:0 0 10px;padding:4px 0 0}
+.rule{display:flex;flex-direction:column;align-items:center;gap:2px}
+.rule:nth-child(even){border-left:2px solid var(--paper-low)}
 .rule .glyph{width:48px;height:48px;flex:0 0 48px;overflow:visible}
 kbd{display:block;min-width:82px;text-align:center;background:#ebe2cb;border:2px solid #b5a789;box-shadow:0 2px 0 #b5a789;padding:0 8px;font:inherit;line-height:28px;white-space:nowrap}
-.rule-action{height:32px;line-height:32px;color:var(--muted)}
+.rule-action{font-size:15px;line-height:21px;color:var(--muted)}
+.welcome-panel .rule-note{font:14px/20px system-ui,sans-serif;color:var(--ink);margin:0 0 10px;text-align:left}
 .primary{display:flex;align-items:center;justify-content:center;gap:12px;position:relative;width:100%;min-height:42px;padding:7px 12px;background:var(--gold);border:2px solid #9f8355;box-shadow:inset 0 2px 0 #ffe9b6,0 2px 0 #9f8355;line-height:24px}
 .primary:hover:not(:disabled),.primary:focus-visible{outline:none;background:#f8dc9e;border-color:var(--ink);box-shadow:inset 0 2px 0 #fff0c7,0 2px 0 var(--ink)}
 .primary:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 0 #dec28b}

@@ -1,7 +1,8 @@
 import {createRandom} from '../../runtime/random-state.mjs';
+import {COMPACT_VIEWPORT} from '../../runtime/game-catalog.mjs';
 import {difficultyAt, ROUND_MS} from './difficulty.mjs';
 
-export const MIN_VIEW = {width: 320, height: 400};
+export const MIN_VIEW = COMPACT_VIEWPORT;
 export const FLIGHT_BOUNDS = {left: 14, right: 86, bottom: 14, top: 74};
 const GOALS = {left: 20, right: 80, bottom: 18, top: 70};
 const START = {x: 30, y: 45};
@@ -218,8 +219,9 @@ export class ScreenFlight {
         for (const wind of state.clouds) wind.y = wind.y === 0 ? 0 : -wind.y;
       }
       this.state = state;
-      const {unit} = difficultyAt(state.stars);
-      if (unit > 1 && state.hearts && !state.loss &&
+      const {unit, stage} = difficultyAt(state.stars);
+      // An in-progress board from an older tier stays intact through its next landing.
+      if (stage === state.stage && unit > 1 && state.hearts && !state.loss &&
         (!fitsStep(difference(state.target, state.position), unit) ||
           state.clouds.some(wind => !fitsStep(wind, unit)))) {
         this.#deal(state.remainingMs);

@@ -27,8 +27,8 @@ export class RegularsSession{
   get responseRemainingMs(){return RESPONSE_MS-this.responseElapsedMs;}
   shuffle(values){const a=[...values];for(let i=a.length-1;i>0;i--){const j=Math.floor(this.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
   pick(values){if(!values.length)throw Error('No eligible visitor');return values[Math.floor(this.random()*values.length)];}
-  canSelect(){return this.phase==='running'&&!!this.visit&&!this.service&&!this.finishRequested&&!this.arrival?.choice;}
-  canServe(){return this.canSelect()&&!this.arrival;}
+  canSelect(){return this.phase==='running'&&!!this.visit&&!this.service&&!this.finishRequested&&!this.arrival;}
+  canServe(){return this.canSelect();}
   resetWindow(){this.windowCount=0;this.windowGuests.clear();}
   resetIntervals(){this.intervalPattern=this.shuffle(this.difficulty.intervals);this.intervalIndex=0;this.updateBlocks=0;this.nextChangeEvery=this.intervalPattern[0];this.recallsSinceChange=0;}
   advanceInterval(){
@@ -92,13 +92,11 @@ export class RegularsSession{
     this.visit={id:this.nextId++,guest:record.guest,meal:record.meal,kind,hinted:kind!=='recall',stage,level:this.difficulty.level,version:record.version,changeInterval,gapVisits:record.lastVisit===null?null:this.nextId-1-record.lastVisit};
     this.visit.motion=this.planMotion(this.visit);
     if(['arrivalMs','departureMs','withdrawalMs','rejectionMs'].some(key=>!Number.isFinite(this.visit.motion[key])||this.visit.motion[key]<=0))throw RangeError('Motion durations must be positive');
-    this.arrival={elapsedMs:0,choice:null};this.responseElapsedMs=0;this.revision++;
+    this.arrival={elapsedMs:0};this.responseElapsedMs=0;this.revision++;
   }
   serve(meal){
     if(!this.canSelect()||!this.activeMeals.includes(meal))return false;
-    if(!this.arrival)return this.commit(meal,'choice');
-    this.arrival.choice=meal;this.revision++;
-    return {queued:true,chosen:meal};
+    return this.commit(meal,'choice');
   }
   commit(meal,reason){
     const v=this.visit,record=this.pool.find(p=>p.guest===v.guest),correct=meal===v.meal;
@@ -139,7 +137,7 @@ export class RegularsSession{
       const step=Math.min(left,boundary);left-=step;this.clockMs+=step;
       if(a)a.elapsedMs+=step;else if(s)s.elapsedMs+=step;else this.responseElapsedMs+=step;
       if(step!==boundary)continue;
-      if(a){this.arrival=null;if(a.choice)this.commit(a.choice,'choice');}
+      if(a)this.arrival=null;
       else if(!s)this.commit(null,'timeout');
       else if(!s.removed)s.removed=true;
       else{
@@ -171,6 +169,7 @@ export class RegularsSession{
     const state=checkpoint.state,s=new RegularsSession(options);
     if(!['welcome','running','paused','summary'].includes(state.phase)||!Number.isFinite(state.clockMs)||state.clockMs<0||!Number.isInteger(state.levelIndex)||!s.stages[state.levelIndex]||!Number.isInteger(state.stats?.mistakes)||state.stats.mistakes<0||state.stats.mistakes>MAX_MISTAKES||!Array.isArray(state.pool)||state.pool.length>6)throw Error('Invalid G04 checkpoint state');
     for(const key of Object.keys(s).filter(key=>!['random','planMotion','stages','windowGuests'].includes(key))){if(!Object.hasOwn(state,key))throw Error('Missing G04 checkpoint field '+key);s[key]=structuredClone(state[key]);}
+    if(s.arrival)s.arrival={elapsedMs:s.arrival.elapsedMs};
     s.difficulty=s.stages[s.levelIndex];s.windowGuests=new Set(checkpoint.windowGuests);s.random.restore(checkpoint.random);return s;
   }
   snapshot(){return structuredClone({phase:this.phase,clockMs:this.clockMs,survivedMs:this.survivedMs,revision:this.revision,round:this.round,pool:this.pool,activeMeals:this.activeMeals,intro:this.intro,visit:this.visit,arrival:this.arrival,service:this.service,responseElapsedMs:this.responseElapsedMs,responseRemainingMs:this.responseRemainingMs,responseLimitMs:RESPONSE_MS,difficulty:this.difficulty,progressDecisions:this.progressDecisions,recallsSinceChange:this.recallsSinceChange,nextChangeEvery:this.nextChangeEvery,window:{count:this.windowCount,guests:[...this.windowGuests]},stats:this.stats,lives:this.lives,endReason:this.endReason,canServe:this.canServe(),canSelect:this.canSelect(),finishRequested:this.finishRequested});}

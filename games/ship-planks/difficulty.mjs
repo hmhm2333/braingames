@@ -3,7 +3,7 @@ export const DIFFICULTY_CONFIG = {
   answerMs: 7000,
   warningMs: 2000,
   promotion: {
-    correctPerStage: 13,
+    correctPerStage: 15,
     recentAnswers: 6,
     recentCorrect: 5,
     correctStreak: 3,

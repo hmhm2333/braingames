@@ -1,6 +1,6 @@
 export const ROUND_MS = 30000;
 
-const STARS_PER_STAGE = 4;
+const STARS_PER_STAGE = 5;
 
 export const DIFFICULTY = [
   {clouds: 3, steps: 2, axes: 1, operations: 2, mixed: [0, 1], unit: 5, regroups: [0, 0], thinkMs: 4000},
