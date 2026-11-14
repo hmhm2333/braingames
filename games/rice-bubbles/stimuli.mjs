@@ -122,7 +122,14 @@ function pixelSVG(svg,width,height,paint){
  paint(probe);svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.setAttribute('shape-rendering','crispEdges');svg.innerHTML=[...paths].map(([color,d])=>`<path fill="${color}" d="${d}"/>`).join('');
 }
 export function paintLegend(svg,kind){
- pixelSVG(svg,48,48,g=>kind==='rice'?paintFood(g,24,24,2,'baozi'):paintWrapped(g,24,24,22/(WRAPPED_RADII.corn+2),'corn',1));
+ const legends={
+  rice:g=>paintFood(g,24,24,2,'baozi'),
+  bubble:g=>paintBubble(g,24,24,1.25,0),
+  wrapped:g=>paintWrapped(g,24,24,22/(WRAPPED_RADII.corn+2),'corn',1),
+  picky:g=>paintPickyBadge({rect(x,y,w,h){g.rect(x+27,y+27,w,h);return this;},fill:style=>g.fill(style)},'baozi'),
+ };
+ const size=kind==='picky'?54:48;
+ pixelSVG(svg,size,size,legends[kind]);
 }
 export function paintInputHint(svg){
  pixelSVG(svg,112,28,g=>{paintFood(g,13,14,1,'baozi');g.rect(32,5,34,18).fill({color:INK});g.rect(34,6,30,14).fill({color:0xf6f0dd});g.rect(39,16,20,2).fill({color:0x626974});paintWrapped(g,87,14,12/(WRAPPED_RADII.corn+2),'corn',1);});

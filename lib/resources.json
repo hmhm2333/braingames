@@ -28,5 +28,11 @@
     "type": "image/png",
     "bytes": 512866,
     "sha256": "e43208c3ca0a0d3888ef7024dcc5cd8d00b476c923b76bffd8b2c4301d798cc9"
+  },
+  {
+    "name": "fish/b7bbc1bc0c93242a736e.png",
+    "type": "image/png",
+    "bytes": 596519,
+    "sha256": "b7bbc1bc0c93242a736e7f99b5638dcf163ae524a65d90178d47104e3dc4c9d3"
   }
 ]

@@ -61,9 +61,9 @@ export function createGameRuntime({games,loadStage,chooseGame,onChange=()=>{},on
       if(!enabled.has(current.id)&&!mounted.getRunState().hasRound){
         background('setting');return{opened:false,reason:'settings-changed'};
       }
-      await mounted.foreground({start});
+      const activation=await mounted.foreground({start});
       if(disposed||ticket!==intent)return{opened:false,reason:'superseded'};
-      presentation=mounted.getMode()==='foreground'?'active':mounted.isVisible()?'frozen':'hidden';notify();return{opened:mounted.getMode()==='foreground',presentation};
+      presentation=mounted.getMode()==='foreground'?'active':mounted.isVisible()?'frozen':'hidden';notify();return{opened:mounted.getMode()==='foreground',presentation,...(activation?.reason?{reason:activation.reason}:{})};
     }catch(failure){if(disposed||ticket!==intent)return{opened:false,reason:'superseded'};error=failure.message;presentation='hidden';notify();throw failure;}
   }
   function background(reason='task-pointer'){

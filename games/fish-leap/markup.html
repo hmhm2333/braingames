@@ -1,0 +1,37 @@
+<canvas id="canvas" aria-hidden="true"></canvas>
+<output id="fish-tip" class="fish-tip" aria-hidden="true" hidden></output>
+<canvas id="move-preview" aria-hidden="true" hidden></canvas>
+<div id="fish-controls" role="group" aria-label="游动的金鱼" inert>
+  <div id="cast-guard" aria-hidden="true" hidden></div>
+</div>
+<button id="move-whale" type="button" aria-label="长按鲸鱼娘移动" tabindex="-1" hidden></button>
+<div id="lobby" class="lobby" hidden>
+  <canvas id="companion" width="200" height="200" aria-hidden="true"></canvas>
+  <section id="welcome" class="paper" aria-labelledby="game-title" hidden>
+    <h1 id="game-title" data-braingames-title data-pixel-text></h1>
+    <p id="practice" data-pixel-text hidden></p>
+    <div class="rules">
+      <div><canvas id="rule-scoop" width="112" height="60" role="img" aria-label="鲸鱼娘用网捞金鱼"></canvas><span id="rule-a" data-pixel-text></span></div>
+      <div><canvas id="rule-evolve" width="112" height="60" role="img" aria-label="金鱼变成 Claude 娘"></canvas><span id="rule-b" data-pixel-text></span></div>
+    </div>
+    <p id="fish-instruction" class="rule-note"></p>
+    <p data-braingames-controls></p>
+    <button id="start" class="primary" type="button" data-pixel-text></button>
+  </section>
+  <section id="result" class="paper" aria-labelledby="game-result-title" role="dialog" hidden>
+    <h2 id="game-result-title" data-braingames-title data-pixel-text></h2>
+    <p id="result-lead" data-pixel-text></p>
+    <p class="number" aria-live="polite"><strong id="score" data-pixel-text></strong><span id="unit" data-pixel-text></span></p>
+    <p class="best"><span id="best-label" data-pixel-text></span><span class="best-score"><strong id="best-value" data-pixel-text></strong><span id="best-unit" data-pixel-text></span></span></p>
+    <div class="actions">
+      <button id="replay" class="primary" type="button" data-pixel-text></button>
+      <button id="random" class="secondary" type="button" data-pixel-text hidden></button>
+    </div>
+  </section>
+  <section id="error" class="paper" role="alert" hidden>
+    <p id="load-error" data-pixel-text></p>
+    <p id="error-detail"></p>
+    <button id="reload" class="primary" type="button" data-pixel-text></button>
+  </section>
+</div>
+<p id="round-status" class="sr" role="status" aria-live="polite"></p>

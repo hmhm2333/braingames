@@ -60,7 +60,7 @@ export function mountGame(host,options={}){
   $('boat-hit').hidden=!playing;$('move-whale').hidden=!playing;
   $('start').disabled=!canReplay||small();$('replay').disabled=!canReplay||small();
   $('random').hidden=!options.onRandom;$('random').disabled=!canRandom||small();
-  $('lives').setAttribute('aria-label','还剩'+session.lives+'次机会');
+  $('lives').setAttribute('aria-label',copy.feedback.lives.replace('{lives}',session.lives));
   for(let i=0;i<MAX_LIVES;i++)$('lives').children[i].dataset.lost=String(i>=session.lives);
   // Controls keep ownership during recovery/animation. Ignored clicks must not
   // fall through to DSH merely because the current placement is still animating.
@@ -140,7 +140,7 @@ export function mountGame(host,options={}){
   if(button.dataset.site===undefined)return;
   stopAnswer();if(!session.canAct()){sync();render();lastWall=performance.now();schedule();return;}
   const out=session.place(Number(button.dataset.site));hover=null;
-  if(out.ok)$('announcement').textContent=out.correct?'补上了，这处不漏了。':'边缘没合上，看看亮起的破口。';
+  if(out.ok)$('announcement').textContent=out.correct?copy.feedback.correct:copy.feedback.wrong;
   sync();render();lastWall=performance.now();schedule();
  }
  function suspend(){

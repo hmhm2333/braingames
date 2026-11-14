@@ -14,8 +14,9 @@ const bestKey = 'braingames.balloon-winds.best.v2';
 const MAX_FRAME_GAP_MS = 250;
 const coordinates = ({x, y}) => '(' + Math.round(x) + ',' + Math.round(y) + ')';
 const at = (element, x, y) => {
-  element.style.left = Math.round(x) + 'px';
-  element.style.top = Math.round(y) + 'px';
+  const left = Math.round(x) + 'px', top = Math.round(y) + 'px';
+  if (element.style.left !== left) element.style.left = left;
+  if (element.style.top !== top) element.style.top = top;
 };
 const setText = (element, value) => { if (element.textContent !== value) element.textContent = value; };
 const hide = (element, value) => { if (element.hidden !== value) element.hidden = value; };
@@ -63,13 +64,11 @@ export function mountGame(host, options) {
     for (const button of buttons) {
       button.disabled = !presented || frozen || small;
       button.setAttribute('aria-disabled', String(blocked));
-      button.tabIndex = blocked ? -1 : 0;
       hide(button, button.dataset.wind === flight?.id);
     }
     hide($('pilot'), !playing() || !presented || frozen || Boolean(flight));
     $('pilot').disabled = !presented || frozen || small;
     $('pilot').setAttribute('aria-disabled', String(!available()));
-    $('pilot').tabIndex = available() ? 0 : -1;
     hide($('resume'), !playing() || presented || !frozen);
     $('start').disabled = $('replay').disabled = !presented || small || !canReplay || pending;
     hide($('random'), !canRandom);
@@ -122,7 +121,8 @@ export function mountGame(host, options) {
     for (const button of buttons) {
       const cloud = visualPlaces.get(button.dataset.wind);
       at(button, cloud.x, cloud.y);
-      button.style.opacity = cloud.opacity;
+      const opacity = String(Math.round(cloud.opacity * 100) / 100);
+      if (button.style.opacity !== opacity) button.style.opacity = opacity;
     }
     setText($('current'), coordinates(toBoard(point)));
     setText($('target'), coordinates(state.target));
@@ -138,7 +138,7 @@ export function mountGame(host, options) {
     at($('pilot'), pilot.x, pilot.y);
     at($('resume'), pilot.x, pilot.y);
 
-    const tip = state.loss === 'timeout' ? '气囊冷了' : state.loss === 'wind' ? '风用尽' : edgeUntil > clock ? '这边会吹出画面' : '';
+    const tip = state.loss === 'timeout' ? copy.feedback.cold : state.loss === 'wind' ? copy.feedback.spent : edgeUntil > clock ? copy.feedback.edge : '';
     hide($('tip'), !tip || !presented || Boolean(flight || drag));
     if (!$('tip').hidden) {
       setText($('tip'), tip);
@@ -159,12 +159,15 @@ export function mountGame(host, options) {
       button.type = 'button';
       button.className = 'cloud';
       button.dataset.wind = wind.id;
+      button.tabIndex = -1;
       button.textContent = coordinates(wind);
       button.setAttribute('aria-label', '点云 ' + coordinates(wind));
-      button.title = '左键加，右键减';
+      button.title = copy.feedback.controls;
       button.style.width = CLOUD_W + 'px';
       button.style.height = CLOUD_H + 'px';
-      button.addEventListener('click', () => launch(wind, 1));
+      button.addEventListener('click', event => {
+        if (event.detail > 0) launch(wind, 1);
+      });
       button.addEventListener('auxclick', event => {
         if (event.button !== 2) return;
         event.preventDefault();
@@ -189,14 +192,14 @@ export function mountGame(host, options) {
     flight = newFlight(wind, direction);
     if (!flight) {
       edgeUntil = clock + 1300;
-      setText($('announce'), '这边会吹出画面');
+      setText($('announce'), copy.feedback.edge);
       redraw();
       schedule();
       return;
     }
     answerSince = null;
     edgeUntil = 0;
-    setText($('announce'), direction === 1 ? '云飞向气球，正向起风' : '云飞向气球，反向起风');
+    setText($('announce'), direction === 1 ? copy.feedback.add : copy.feedback.subtract);
     updateInputs();
     redraw();
     schedule();
@@ -233,9 +236,9 @@ export function mountGame(host, options) {
     $('pilot').removeAttribute('data-dragging');
     if (session.relocate(point)) {
       rebuildClouds();
-      setText($('announce'), '气球移到 ' + coordinates(point) + '，新的云已出现');
+      setText($('announce'), copy.feedback.moved.replace('{point}', coordinates(point)));
     } else if (!same(point, session.state.position)) {
-      setText($('announce'), same(point, session.state.target) ? '星星要靠风飞到' : '剩下的风从这里到不了星星');
+      setText($('announce'), same(point, session.state.target) ? copy.feedback.needsWind : copy.feedback.unreachable);
     }
     updateInputs();
     armAnswer();
@@ -279,7 +282,7 @@ export function mountGame(host, options) {
     answerSince = null;
     hold?.cancel({untilRelease: true});
     rebuildClouds();
-    const message = session.state.loss === 'timeout' ? '气囊冷了，少了一颗心' : '风用尽，少了一颗心';
+    const message = session.state.loss === 'timeout' ? copy.feedback.timeout : copy.feedback.empty;
     setText($('announce'), message);
   }
 
@@ -321,7 +324,7 @@ export function mountGame(host, options) {
           else {
             rebuildClouds();
             const point = coordinates(session.state.position);
-            setText($('announce'), result === 'star' ? '摘到星星，抵达 ' + point : '落在 ' + point);
+            setText($('announce'), result === 'star' ? copy.feedback.star.replace('{point}', point) : copy.feedback.landed.replace('{point}', point));
             armAnswer();
           }
           changed = true;
@@ -341,6 +344,7 @@ export function mountGame(host, options) {
       if (edgeUntil && edgeUntil <= clock) { edgeUntil = 0; changed = true; }
       if (changed || now - lastPaint >= 31) {
         redraw();
+        if (changed && !playing() && !$('replay').disabled) $('replay').focus({preventScroll: true});
         lastPaint = now;
       }
       schedule();
@@ -466,6 +470,8 @@ export function mountGame(host, options) {
     document.fonts.add(font);
     style.textContent = css;
     root.innerHTML = html;
+    $('pilot').title = copy.moveNote;
+    $('pilot').setAttribute('aria-label', copy.moveNote);
     applyCopy(root, {'#rule-a': copy.rules[0], '#rule-b': copy.rules[1],
       '#start': copy.start, '#result-lead': copy.resultLead, '#unit': copy.resultUnit,
       '#best-label': copy.bestLabel, '#replay': copy.replay, '#random': SHARED_COPY.next,

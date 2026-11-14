@@ -57,15 +57,15 @@ function handleEvents(){
   for(const e of session.drainEvents()){
     log(e);const s=session.snapshot();
     if(e.type==='item_spawn')scene.setItem(e.item);
-    if(e.type==='picky_intro'){scene.introPicky(e.atMs);announce('这顿先不吃'+FOOD_TYPES.find(food=>food.id===e.foodId).label+'，泡泡也别接。');}
+    if(e.type==='picky_intro'){scene.introPicky(e.atMs);announce(copy.pickyHint.replace('{food}',FOOD_TYPES.find(food=>food.id===e.foodId).label));}
     if(e.type==='outcome'){
       if(e.outcome!=='interrupted')session.schedulePresentation(scene.react(e.outcome,s));
-      announce({rice_caught:'接住了。',bubble_mistake:'接到泡泡了。',bubble_pass:'泡泡放过去了。',rice_miss:'这口没接着。',food_refused:'这顿不吃的，放过去了。',food_mistake:'这顿不吃这个，放下。',interrupted:'游戏已暂停，当前物体不计结果。'}[e.outcome]);
+      announce(copy.feedback[e.outcome]);
     }
     if(e.type==='life_lost'&&e.lives===0)session.scheduleSettlement(scene.failureEndAt(s.clockMs));
     if(e.type==='meal_ready')session.scheduleMeal(scene.mealStartAt(s));
     if(e.type==='meal_form_start')scene.scheduleMeal(s,e.atMs);
-    if(e.type==='meal_collected'){scene.collectMeal(e.atMs);announce('团好一颗饭球，已经收好。');}
+    if(e.type==='meal_collected'){scene.collectMeal(e.atMs);announce(copy.feedback.meal);}
     if(e.type==='finish'&&view==='playing')showResult();
   }
 }
@@ -225,7 +225,7 @@ const initialization=(async()=>{
  try{
   const [text]=await Promise.all([ui?ui.markup:fetch(new URL('./markup.html',import.meta.url)).then(response=>{if(!response.ok)throw Error(`游戏界面加载失败 (${response.status})`);return response.text();}),pixelFace.load(),styleReady]);
   if(disposed)return false;const template=document.createElement('template');template.innerHTML=text;root.replaceChildren(...template.content.firstElementChild.childNodes);markupLoaded=true;
-  applyCopy(root,{'#loading-panel h1':copy.loading,'#start-button span':copy.start,'#welcome-panel .rule:first-child .rule-action':copy.rules[0],'#welcome-panel .rule:last-child .rule-action':copy.rules[1],'#result-title':copy.resultLead,'#result-panel .survival-result>span':copy.resultUnit,'#result-panel .best-label':copy.bestLabel,'#again-button':copy.replay,'#back-button':SHARED_COPY.next,'#error-title':copy.loadError,'#reload-button':SHARED_COPY.reload});
+  applyCopy(root,{'#loading-panel h1':copy.loading,'#start-button span':copy.start,'#result-title':copy.resultLead,'#result-panel .survival-result>span':copy.resultUnit,'#result-panel .best-label':copy.bestLabel,'#again-button':copy.replay,'#back-button':SHARED_COPY.next,'#error-title':copy.loadError,'#reload-button':SHARED_COPY.reload});
   mountControlGuide(root,copy);
   document.fonts.add(pixelFace);pixelText=createPixelText(root);root.dataset.font='loaded';
   for(const img of root.querySelectorAll('img[src]'))img.src=ui?ui.icons[img.getAttribute('src')]:new URL(img.getAttribute('src'),import.meta.url).href;
@@ -250,7 +250,13 @@ const observer=new ResizeObserver(()=>{
   scene.layout(view);placeControls();updateStart();render();if(!presented){paintStatic();setFrozen(frozenVisible);}else if(view==='paused')void resumeGame();
 });observer.observe(host);listeners.push(()=>observer.disconnect());
 
-  paintLegend($('rice-legend'),'rice');paintLegend($('bubble-legend'),'bubble');
+  for(const [index,kind] of ['rice','bubble','wrapped','picky'].entries()){
+    const legend=$(kind+'-legend');
+    paintLegend(legend,kind);
+    legend.nextElementSibling.textContent=copy.rules[index];
+  }
+  $('rice-input-rule').textContent=copy.ruleNote;
+  $('scene-root').setAttribute('aria-label',copy.title);
   if(!qa){const saved=localStorage.getItem(bestKey);if(saved!==null){bestSeconds=Number(saved);if(!Number.isSafeInteger(bestSeconds)||bestSeconds<0)throw Error('最佳记录数据无效');}}
   await scene.init();
   if(disposed)return false;

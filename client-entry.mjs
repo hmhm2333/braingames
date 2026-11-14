@@ -83,13 +83,22 @@ export function apply(ctx){
   const pixelLabel=text=>h('span',{'data-pixel-text':true},text);
   function TaskEntry({sessionId}={}){
     React.useSyncExternalStore(store.subscribe,store.getSnapshot);
-    React.useEffect(()=>{currentSessionId=sessionId??null;return()=>{if(currentSessionId===sessionId)currentSessionId=null;};},[sessionId]);
+    React.useEffect(()=>{
+      const id=sessionId??null;
+      if(id!==currentSessionId&&runtime.status().selecting)runtime.background('task-changed');
+      currentSessionId=id;
+      return()=>{
+        if(currentSessionId!==id)return;
+        if(runtime.status().selecting)runtime.background('task-changed');
+        currentSessionId=null;
+      };
+    },[sessionId]);
     const s=api.status(),active=s.resident?GAME_CATALOG.find(game=>game.id===s.gameId):null;
     const label=s.selecting?SHARED_COPY.selecting:s.loading?'正在准备':s.hasRound?SHARED_COPY.headerContinue:SHARED_COPY.headerStart;
     return h('div',{'data-braingames-task-entry':true,style:{position:'relative',display:'flex',alignItems:'center'}},
       s.mode==='foreground'?h('span',{'data-braingames-active':true,style:{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',fontSize:13,opacity:.65}},h(GameIcon,{icon:active?.icon}),SHARED_COPY.headerPlaying):h('button',{'data-braingames-entry':true,type:'button',style:{...button,display:'flex',alignItems:'center',gap:6},
         disabled:s.loading||!s.ready||!s.canStart&&!s.hasRound,
-        title:!s.canStart&&!s.hasRound?'请在插件设置中勾选游戏':active?.name??SHARED_COPY.appLabel,
+        title:!s.canStart&&!s.hasRound?'请在 dsh-braingames 设置中勾选游戏':active?.name??SHARED_COPY.appLabel,
         onClick:()=>run(()=>api.open())},h(GameIcon,{icon:active?.icon}),label),
       s.presentation==='waiting'?h(PixelPopup,{'data-braingames-invitation':true,'aria-label':'BrainGames 邀请'},
         h('p',{className:'braingames-popup-message'},h(GameIcon),pixelLabel(hasRunning?SHARED_COPY.invite:SHARED_COPY.inviteIdle)),
@@ -157,7 +166,13 @@ export function apply(ctx){
   const api={
     status(){return{installed:!unloaded,version:__BRAINGAMES_VERSION__,preferencesReady,ready:preferencesReady&&bootSettled&&!bootError,...runtime.status()};},
     diagnostics(){return{...api.status(),taskState:snapshot(),inputGuard:{foreground:guardState.foreground,reserved:guardBindings.length,heldCodes:guardState.heldCodes},stage:runtime.diagnostics().stage,preferences:{status:preferences.getSnapshot().status,value:preferences.getSnapshot().value,writable:preferences.getSnapshot().writable,saving,error:settingsError},error:bootError||openError,restoreFailed:resumeError};},
-    async open(options){if(!await api.ready)throw Error(bootError||'BrainGames 设置尚未就绪');const baseline=snapshot('activation-baseline');attention.observe(baseline,baseline.readiness.generation);return runtime.open(options);},
+    async open(options){
+      if(!await api.ready)throw Error(bootError||'dsh-braingames 设置尚未就绪');
+      const baseline=snapshot('activation-baseline');attention.observe(baseline,baseline.readiness.generation);
+      const result=await runtime.open(options);
+      if(result.reason==='viewport')throw Error(SHARED_COPY.viewportError);
+      return result;
+    },
     retrySelection(options){return runtime.status().view==='finished'?runtime.random(options):api.open(options);},
     retryBoot(){api.ready=startBootstrap();return api.ready;},
     async discardSavedRound(){refreshStore.clear();runtime.abandonRestore();resumeError=false;bootError='';bootSettled=true;api.ready=Promise.resolve(true);return api.open();},
@@ -188,7 +203,7 @@ export function apply(ctx){
     preferencesReady=state.status==='ready';
     if(preferencesReady){
       resolvePreferences();const signature=JSON.stringify(state.value);
-      if(signature!==preferenceSignature){preferenceSignature=signature;const value=state.value;runtime.configure({enabledGameIds:value.enabledGames,...Object.fromEntries(SETTINGS_FIELDS.map(field=>[field,value[field]]))});if(!value.keepOnRefresh)refreshStore?.clear();}
+      if(signature!==preferenceSignature){preferenceSignature=signature;const value=state.value;runtime.configure({enabledGameIds:value.enabledGames,...Object.fromEntries(SETTINGS_FIELDS.filter(field=>field!=='modelRecommendation').map(field=>[field,value[field]])),recommendByTask:value.modelRecommendation===true});if(!value.keepOnRefresh)refreshStore?.clear();}
     }
     changed('preferences');refresh();
   }

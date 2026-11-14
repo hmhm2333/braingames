@@ -70,37 +70,45 @@ function updateResponse(){
 }
 function updateUI(force=false){
   syncMenu();updateResponse();
-  const showName=!!session.arrival&&!session.arrival.choice&&session.arrival.elapsedMs<GUEST_NAME_MS;
+  const showName=!!session.arrival&&session.arrival.elapsedMs<GUEST_NAME_MS;
   const key=`${session.phase}:${session.revision}:${showName}`;if(!force&&key===uiKey)return;uiKey=key;const s=session.snapshot();if(frozenVisible&&s.phase==='paused')s.phase='running';
   root.dataset.phase=s.phase;
   for(const id of ['welcome','summary','loading'])$(id).hidden=id!==s.phase;
-  if(layoutPhase!==s.phase){layoutPhase=s.phase;fitStage();}
+  const phaseChanged=layoutPhase!==s.phase;
+  if(phaseChanged){layoutPhase=s.phase;fitStage();}
+  const handle=$('move-whale'),moveHint=frozenVisible?SHARED_COPY.freezeHint:'长按鲸鱼娘移动餐台';
+  handle.setAttribute('aria-label',moveHint);handle.title=moveHint;
   $('menu').hidden=s.phase!=='running';
   $('lives').hidden=s.phase!=='running';
   $('lives').setAttribute('aria-label',`还能失误 ${s.lives} 次`);
   if(s.service&&s.service.outcome.visitId!==announcedVisit){
     const out=s.service.outcome;announcedVisit=out.visitId;
-    const tail=s.lives?`还能失误 ${s.lives} 次。`:`已累计失误 ${MAX_MISTAKES} 次，这位离开后就休息。`;
-    $('announcement').textContent=out.reason==='timeout'?`这一单没赶上，客人空手离开。${tail}`:out.correct?`给${guestName(out.guest)}的菜上对了。`:`${guestName(out.guest)}拒收了这份菜。${tail}`;
+    const {feedback}=copy,guest=guestName(out.guest);
+    const tail=s.lives?feedback.lives.replace('{lives}',s.lives):feedback.last.replace('{max}',MAX_MISTAKES);
+    $('announcement').textContent=out.reason==='timeout'?feedback.timeout+tail:out.correct?feedback.correct.replace('{guest}',guest):feedback.wrong.replace('{guest}',guest)+tail;
   }
   for(const [i,heart] of [...$('lives').children].entries())heart.dataset.lost=String(i>=s.lives);
   // An occupied menu slot keeps the click inside the game even while a dish is being served.
-  const selected=s.arrival?.choice??s.service?.outcome.chosen;
+  const selected=s.service?.outcome.chosen;
   for(const button of $('menu').children){
     button.disabled=relocating||session.phase!=='running';
     button.setAttribute('aria-disabled',String(!s.canSelect||button.disabled));
     button.dataset.selected=String(selected===button.dataset.meal);
   }
-  const showMeal=s.visit?.hinted&&!s.service&&!s.finishRequested&&!s.arrival?.choice;
+  const showMeal=s.visit?.hinted&&!s.service&&!s.finishRequested;
   const order=s.phase==='running'&&(showName||showMeal)?s.visit:null;
   $('order').hidden=!order;
   if(order){
     const name=guestName(order.guest);
     $('order').setAttribute('aria-label',showMeal?`${name}要${mealName(order.meal)}`:name);
     $('order').dataset.kind=order.kind;
-    $('order-caption').hidden=!showName;$('order-caption').textContent=showName?name:'';
+    const caption=$('order-caption');
+    caption.style.visibility=showName?'visible':'hidden';
+    if(caption.textContent!==name)caption.textContent=name;
     $('order-icon').hidden=!showMeal;$('order-label').textContent=showMeal?mealName(order.meal):'';
-    if(showMeal)$('order-icon').src=mealUrl(order.meal);else $('order-icon').removeAttribute('src');
+    const icon=$('order-icon');
+    if(showMeal){const url=mealUrl(order.meal);if(icon.getAttribute('src')!==url)icon.src=url;}
+    else icon.removeAttribute('src');
     const cue=orderCueRect(scene.layout,order.motion);
     for(const [name,value] of Object.entries(cue))$('order').style.setProperty('--order-'+name,value+'px');
   }else{$('order').removeAttribute('aria-label');$('order-label').textContent='';$('order-icon').removeAttribute('src');}
@@ -109,12 +117,10 @@ function updateUI(force=false){
   if(front){$('front-name').textContent=`先给${guestName(front)}`;$('menu').setAttribute('aria-label',`给${guestName(front)}上菜`);}
   else $('menu').setAttribute('aria-label','选一份，上菜');
   if(s.phase==='summary'){
+    if(phaseChanged&&presented&&canReplay)$('replay').focus({preventScroll:true});
     const customers=s.stats.customersServed;
     if(customers>bestCustomers){bestCustomers=customers;if(!options.qa)localStorage.setItem(bestKey,String(bestCustomers));}
     $('customer-value').textContent=customers;$('best-value').textContent=bestCustomers;
-  }
-  if(s.phase==='welcome'||s.phase==='summary'){
-    fitStage();
   }
 }
 function positionLobby(){
@@ -198,7 +204,7 @@ function availability(){if(!session)return;const small=!playableSize(root.client
 async function init(){
   const markup=options.ui?options.ui.markup:await (async()=>{const response=await fetch(new URL('./service-markup.html',import.meta.url));if(!response.ok)throw Error('游戏界面加载失败 ('+response.status+')');return response.text();})();
   root.innerHTML=markup;
-  applyCopy(root,{'#welcome .rule:first-child>span':copy.rules[0],'#welcome .rule:last-child>span':copy.rules[1],'#start span':copy.start,'#result-lead':copy.resultLead,'#summary .customer-result>span':copy.resultUnit,'#summary .best-result>span:first-child':copy.bestLabel,'#replay span':copy.replay,'#random span':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload span':SHARED_COPY.reload});
+  applyCopy(root,{'#welcome .rule:first-child>span':copy.rules[0],'#welcome .rule:last-child>span':copy.rules[1],'#start span':copy.start,'#arrival-hint':copy.ruleNote,'#result-lead':copy.resultLead,'#summary .customer-result>span':copy.resultUnit,'#summary .best-result>span:first-child':copy.bestLabel,'#replay span':copy.replay,'#random span':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload span':SHARED_COPY.reload});
   mountControlGuide(root,copy);
   await styleReady;await pixelFace.load();document.fonts.add(pixelFace);pixelText=createPixelText(root);
   sprites=await loadSprites({manifest:options.manifest,loadAtlas:options.loadAtlas});

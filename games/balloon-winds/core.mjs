@@ -218,8 +218,9 @@ export class ScreenFlight {
         for (const wind of state.clouds) wind.y = wind.y === 0 ? 0 : -wind.y;
       }
       this.state = state;
-      const {unit} = difficultyAt(state.stars);
-      if (unit > 1 && state.hearts && !state.loss &&
+      const {unit, stage} = difficultyAt(state.stars);
+      // An in-progress board from an older tier stays intact through its next landing.
+      if (stage === state.stage && unit > 1 && state.hearts && !state.loss &&
         (!fitsStep(difference(state.target, state.position), unit) ||
           state.clouds.some(wind => !fitsStep(wind, unit)))) {
         this.#deal(state.remainingMs);

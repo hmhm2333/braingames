@@ -12,12 +12,12 @@ export const Config=Schema.object({
   inviteRequireNoUnread:Schema.boolean().default(true).volatile(),
   keepVisibleOnPause:Schema.boolean().default(true).volatile(),
   keepOnRefresh:Schema.boolean().default(true).volatile(),
-  recommendByTask:Schema.boolean().default(true).volatile()
+  modelRecommendation:Schema.boolean().default(false).volatile()
 });
 
 export async function apply(ctx,config){
   await applyResources(ctx);
   const {version}=JSON.parse(await readFile(new URL('./package.json',import.meta.url),'utf8'));
-  applyCapabilities(ctx,{version,enabledGameIds:()=>config.enabledGames.get(),recommendationEnabled:()=>config.recommendByTask.get()});
+  applyCapabilities(ctx,{version,enabledGameIds:()=>config.enabledGames.get(),recommendationEnabled:()=>config.modelRecommendation.get()});
   ctx.inject(['settings'],child=>child.effect(()=>child.settings.configure({auto:false},ctx.fiber)));
 }
