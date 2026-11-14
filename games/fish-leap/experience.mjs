@@ -3,6 +3,7 @@ import {RECOVERY_MS} from '../../runtime/presentation.mjs';
 import {GAME_COPY, SHARED_COPY} from '../../runtime/game-catalog.mjs';
 import {applyCopy} from '../../runtime/apply-copy.mjs';
 import {mountControlGuide} from '../../runtime/control-guide.mjs';
+import {mountGameRecords} from '../../runtime/game-records.mjs';
 import {createPixelText} from '../../runtime/pixel-text.mjs';
 import {FISH_HIT_GRACE_MS, FishSchool, MIN_VIEW, clampActor} from './core.mjs';
 import {HIT_HALF_HEIGHT, HIT_HALF_WIDTH, Scene, drawRuleArt, hitsFish, loadMotion} from './scene.mjs';
@@ -48,7 +49,7 @@ export function mountGame(host, options) {
   const errors = [];
   const initialTier = options.practiceTier ?? 0;
   const bestKey = 'braingames.fish-leap.bestSeconds.v1' + (initialTier ? '.tier-' + (initialTier + 1) : '');
-  let art, scene, netOffsets, pixelText, observer, school, hold, drag, position;
+  let art, scene, netOffsets, pixelText, observer, school, hold, drag, position, records;
   let saved = options.checkpoint;
   let width = 0, height = 0, small = false, ready = false, disposed = false, pending = false;
   let presented = false, frozen = false, recovery = 0, raf = null, last = null;
@@ -202,8 +203,7 @@ export function mountGame(host, options) {
       if (current === 'finished') {
         const seconds = Math.floor(school.frozenAt / 1000);
         if (seconds > best) {
-          localStorage.setItem(bestKey, String(seconds));
-          best = seconds;
+          best = records.saveScore(bestKey, seconds);
         }
         setText($('score'), String(seconds));
         setText($('best-value'), String(best));
@@ -272,7 +272,7 @@ export function mountGame(host, options) {
       if (point.x !== origin.x || point.y !== origin.y) {
         Object.assign(school.actor, point);
         position = {x: point.x / width, y: point.y / height};
-        localStorage.setItem(positionKey, JSON.stringify(position));
+        records.savePosition(positionKey, position);
       }
       recovery = performance.now() + RECOVERY_MS;
     }
@@ -338,7 +338,7 @@ export function mountGame(host, options) {
     hold?.cancel({untilRelease: true});
     stop();
     if (ready) {
-      setText($('error-detail'), error.message);
+      setText($('error-detail'), SHARED_COPY.loadedError);
       redraw();
     }
     options.onViewChange();
@@ -397,6 +397,7 @@ export function mountGame(host, options) {
       '#best-label': copy.bestLabel, '#best-unit': copy.resultUnit, '#replay': copy.replay, '#random': SHARED_COPY.next,
       '#load-error': copy.loadError, '#reload': SHARED_COPY.reload});
     mountControlGuide(root, copy);
+    records = mountGameRecords(root, '#welcome', '#result');
     if (initialTier) {
       setText($('practice'), '第 ' + (initialTier + 1) + ' 档试玩');
       hide($('practice'), false);
@@ -404,18 +405,8 @@ export function mountGame(host, options) {
     drawRuleArt($('rule-scoop'), $('rule-evolve'), art);
     scene = new Scene($('canvas'), art);
     netOffsets = scene.netOffsets;
-    const storedBest = localStorage.getItem(bestKey);
-    if (storedBest !== null) {
-      best = Number(storedBest);
-      if (!Number.isSafeInteger(best) || best < 0) throw Error('捞鱼记录格式无效');
-    }
-    const storedPosition = localStorage.getItem(positionKey);
-    if (storedPosition !== null) {
-      position = JSON.parse(storedPosition);
-      if (![position?.x, position?.y].every(value => Number.isFinite(value) && value >= 0 && value <= 1)) {
-        throw Error('捞鱼位置格式无效');
-      }
-    }
+    best = records.readScore(bestKey);
+    position = records.readPosition(positionKey);
     hold = createMoveHandle($('move-whale'), {
       canMove,
       onGrab() { stop(); drawRound(); },

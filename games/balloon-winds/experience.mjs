@@ -3,6 +3,7 @@ import {RECOVERY_MS} from '../../runtime/presentation.mjs';
 import {GAME_COPY, SHARED_COPY} from '../../runtime/game-catalog.mjs';
 import {applyCopy} from '../../runtime/apply-copy.mjs';
 import {mountControlGuide} from '../../runtime/control-guide.mjs';
+import {mountGameRecords} from '../../runtime/game-records.mjs';
 import {createPixelText} from '../../runtime/pixel-text.mjs';
 import {ScreenFlight, MIN_VIEW, same, signedWind} from './core.mjs';
 import {placeClouds, placeCoordinatePins, balloonScale, CLOUD_W, CLOUD_H, PIN_W, PIN_H} from './layout.mjs';
@@ -41,6 +42,7 @@ export function mountGame(host, options) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const font = new FontFace('Whale Wind Pixel', options.ui ? options.ui.fontBytes :
     'url("' + new URL('./ui/song-subset.ttf', import.meta.url).href + '")');
+  let records;
   let art, scene, pixelText, session, hold, observer, flight, drag, missStart = null;
   let saved = options.checkpoint;
   let places = new Map(), visualPlaces = new Map(), buttons = [];
@@ -269,8 +271,7 @@ export function mountGame(host, options) {
 
   function settleBest() {
     if (session.state.stars <= best) return;
-    localStorage.setItem(bestKey, String(session.state.stars));
-    best = session.state.stars;
+    best = records.saveScore(bestKey, session.state.stars);
   }
 
   function armAnswer(now = performance.now()) {
@@ -408,7 +409,7 @@ export function mountGame(host, options) {
     stop();
     updateInputs();
     if (ready) {
-      setText($('error-detail'), error.message);
+      setText($('error-detail'), SHARED_COPY.loadedError);
       redraw();
     }
     options.onViewChange();
@@ -477,13 +478,10 @@ export function mountGame(host, options) {
       '#best-label': copy.bestLabel, '#replay': copy.replay, '#random': SHARED_COPY.next,
       '#load-error': copy.loadError, '#reload': SHARED_COPY.reload});
     mountControlGuide(root, copy);
+    records = mountGameRecords(root, '#welcome', '#result');
     drawRuleArt($('rule-add'), $('rule-subtract'), art);
     scene = makeScene($('canvas'), art);
-    const stored = localStorage.getItem(bestKey);
-    if (stored !== null) {
-      best = Number(stored);
-      if (!Number.isSafeInteger(best) || best < 0) throw Error('摘星记录格式无效');
-    }
+    best = records.readScore(bestKey);
     hold = createMoveHandle($('pilot'), {
       canMove: available, onGrab() {}, onActivate: beginDrag, onMove: moveDrag,
       onDrop: endDrag, onCancel: cancelDrag, onTap() {}, onError: fail,

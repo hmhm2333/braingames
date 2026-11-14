@@ -1,6 +1,7 @@
 import {GAME_COPY,SHARED_COPY} from '../../runtime/game-catalog.mjs';
 import {applyCopy} from '../../runtime/apply-copy.mjs';
 import {mountControlGuide} from '../../runtime/control-guide.mjs';
+import {mountGameRecords} from '../../runtime/game-records.mjs';
 const copy=GAME_COPY['planks-g02'];
 import {RepairSession,INTRO_PATCH,MAX_LIVES,CONTACT_MS,ANSWER_MS,WARNING_MS,randomSource,rotateCells} from './core.mjs';
 import {RepairScene,LAYOUT,drawWood,siteBox,leakPoint,loadWhale} from './scene.mjs';
@@ -20,6 +21,7 @@ export function mountGame(host,options={}){
  const face=new FontFace('Whale G02 Pixel',options.ui?options.ui.fontBytes:'url("'+new URL('./ui/song-subset.ttf',import.meta.url).href+'")',{weight:'400'});
  const $=id=>root.querySelector('#'+id),listeners=[],errors=[];
  const bestKey='braingames.g02.bestBuilt.v1',positionKey='braingames.g02.position.v1';
+ let records;
  let frozenVisible=false,frozenDragged=false,ready=false,disposed=false,presented=options.presented!==false,view='loading',session=null,scene=null,pixelText=null,move=null;
  let raf=null,dragRaf=null,lastWall=null,recoveryUntil=0,hover=null,press=null,grab=null,layout={x:0,y:0};
  let voyage=null,completedVoyages=0,navRandom=null,heading=0;
@@ -70,7 +72,7 @@ export function mountGame(host,options={}){
   }
  }
  function finish(){
-  stopAnswer(false);stop();if(session.stats.built>best){best=session.stats.built;if(!options.qa)localStorage.setItem(bestKey,String(best));}
+  stopAnswer(false);stop();if(session.stats.built>best)best=options.qa?session.stats.built:records.saveScore(bestKey,session.stats.built);
   text('result-value',session.stats.built);text('best-value',best);hover=null;setView('finished');render();pixelText?.flush();$('replay').focus({preventScroll:true});
  }
  function needed(){return recoveryUntil!==0||!!session?.motion||!!session?.growth||!!voyage;}
@@ -97,8 +99,8 @@ export function mountGame(host,options={}){
  }
  function fail(error){
   if(disposed)return;stopAnswer(false);stop();errors.push(error.stack??String(error));console.error(error);session?.pause();
-  if(!$('error')){root.replaceChildren();const panel=document.createElement('p');panel.setAttribute('role','alert');panel.textContent=error.message;root.append(panel);view='error';options.onViewChange?.(view);return;}
-  text('error-detail',error.message??String(error));setView('error');pixelText?.flush();
+  if(!$('error')){root.replaceChildren();const panel=document.createElement('p');panel.setAttribute('role','alert');panel.textContent=SHARED_COPY.loadedError;root.append(panel);view='error';options.onViewChange?.(view);return;}
+  text('error-detail',SHARED_COPY.loadedError);setView('error');pixelText?.flush();
  }
  function clampPosition(x,y){return navigation.clampPosition(x,y,width,height);}
  function voyagePosition(){return voyage?voyagePose(voyage):{...layout,heading};}
@@ -116,7 +118,7 @@ export function mountGame(host,options={}){
   if(!grab)return;cancelDragFrame();const p=commit?clampPosition(grab.x+grab.dx,grab.y+grab.dy):{x:grab.x,y:grab.y};grab=null;
   $('core').style.transform='';delete $('core').dataset.moving;
   layout=p;$('core').style.left=p.x+'px';$('core').style.top=p.y+'px';
-  if(commit){position={x:(p.x+LAYOUT.width/2)/width,y:(p.y+LAYOUT.height/2)/height};if(!options.qa)localStorage.setItem(positionKey,JSON.stringify(position));}
+  if(commit){position={x:(p.x+LAYOUT.width/2)/width,y:(p.y+LAYOUT.height/2)/height};if(!options.qa)records.savePosition(positionKey,position);}
   if(presented&&!small()&&session.phase==='running'){session.resume();recover();}
  }
  async function start(){
@@ -169,14 +171,14 @@ export function mountGame(host,options={}){
   document.fonts.add(font);root.innerHTML=markup;
   applyCopy(root,{'#welcome .rules>div:first-child span':copy.rules[0],'#welcome .rules>div:last-child span':copy.rules[1],'#start':copy.start,'#result-lead':copy.resultLead,'#result .number>span':copy.resultUnit,'#result .best>span:first-child':copy.bestLabel,'#replay':copy.replay,'#random':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload':SHARED_COPY.reload});
   mountControlGuide(root,copy);
+  records=mountGameRecords(root,'#welcome','#result');
   session=new RepairSession();scene=new RepairScene($('scene'),whale,$('companion'),$('clock-occluder'));
   for(let i=0;i<MAX_LIVES;i++){
    const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 9 8');icon.setAttribute('aria-hidden','true');Object.assign(icon.style,{left:(LIFE_POINTS[i][0]-MAST.x+40-9)+'px',top:(LIFE_POINTS[i][1]-MAST.y+40-8)+'px'});
    for(const [name,d]of [['heart-edge','M0 1H1V0H4V1H5V0H8V1H9V4H8V5H7V6H6V7H5V8H4V7H3V6H2V5H1V4H0Z'],['heart-fill','M1 2H2V1H3V2H6V1H7V2H8V4H7V5H6V6H5V7H4V6H3V5H2V4H1Z'],['heart-glint','M2 2H3V3H2Z']]){const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('class',name);path.setAttribute('d',d);icon.append(path);} $('lives').append(icon);
   }
   $('boat-hit').style.clipPath=hullClip();
-  const storedBest=localStorage.getItem(bestKey);if(storedBest!==null){const n=Number(storedBest);if(!Number.isSafeInteger(n)||n<0)throw Error('补船记录格式无效');best=n;}
-  const storedPosition=localStorage.getItem(positionKey);if(storedPosition!==null){position=JSON.parse(storedPosition);if(!Number.isFinite(position.x)||!Number.isFinite(position.y)||position.x<0||position.x>1||position.y<0||position.y>1)throw Error('补船位置格式无效');}
+  best=records.readScore(bestKey);position=records.readPosition(positionKey);
   for(let i=0;i<5;i++){const b=document.createElement('button');b.type='button';b.dataset.site=i;const drop=document.createElement('span');drop.className='leak-drop';drop.setAttribute('aria-hidden','true');b.append(drop);Object.assign(b.style,{width:'46px',height:'46px'});$('sites').append(b);
    on(b,'pointerenter',()=>{if(!blocked()&&session.canAct()){hover=i;render();}});on(b,'pointerleave',()=>{if(hover===i){hover=null;render();}});
   }
@@ -200,7 +202,13 @@ export function mountGame(host,options={}){
   resizeObserver=new ResizeObserver(resize);resizeObserver.observe(host);return true;
  })().catch(error=>{fail(error);return false;});
  function checkpoint(){if(!ready||errors.length)return null;return{version:1,view,session:session.checkpoint(),position,layout,voyage,heading,completedVoyages,navigation:navRandom?.getState()??null};}
- function setFrozen(active){frozenVisible=active;frozenDragged=false;}
+ function setFrozen(active){
+  frozenVisible=active;frozenDragged=false;
+  const button=$('move-whale');if(!button)return;
+  button.title=active?SHARED_COPY.freezeHint:'长按鲸鱼娘拖动';
+  button.setAttribute('aria-label',button.title);
+  button.tabIndex=active?0:-1;
+ }
  function snapshot(){return{ready,view,disposed,presented,recovering:recoveryUntil!==0,relocating:!!grab,voyaging:!!voyage,voyage:structuredClone(voyage),completedVoyages,viewportBlocked:small(),rafPending:raf!==null,dragRafPending:dragRaf!==null,answerTimerPending:answerTimer!==null,answerWakeups,answerRemainingMs:session?.task?Math.max(0,ANSWER_MS-session.task.elapsedMs-(answerStartedAt===null?0:performance.now()-answerStartedAt)):null,errors:[...errors],session:session?.snapshot()??null,scene:{drawCount:scene?.drawCount??drawsAtDispose??0,width:LAYOUT.width,height:LAYOUT.height,viewport:{width,height},position:voyagePosition()},best};}
  function configure({seed:fixedSeed=1,lives=MAX_LIVES}={}){
   if(!options.qa||!ready||!['welcome','finished'].includes(view))throw Error('QA setup requires a fresh round');

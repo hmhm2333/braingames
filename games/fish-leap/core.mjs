@@ -1,4 +1,5 @@
 import {createRandom} from '../../runtime/random-state.mjs';
+import {COMPACT_VIEWPORT} from '../../runtime/game-catalog.mjs';
 import {NET_CD_MS, EVOLUTION_MS, TIER_MIN_MS, OPENING_FISH, TIERS} from './difficulty.mjs';
 
 export const STARTING_LIVES = 3;
@@ -11,7 +12,7 @@ export const DEPARTURE_ANIMATION_MS = 320;
 export const CONTACT_FRAME = 4;
 export const SCOOP_FRAMES = 12;
 export const REACTION_FRAMES = 12;
-export const MIN_VIEW = {width: 320, height: 400};
+export const MIN_VIEW = COMPACT_VIEWPORT;
 
 const ACTOR_SIDE_ROOM = Math.ceil(48 * ACTOR_SCALE);
 const ACTOR_DRAG_SIDE_ROOM = Math.ceil(50 * ACTOR_SCALE);

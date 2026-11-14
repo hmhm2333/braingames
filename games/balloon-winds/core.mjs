@@ -1,7 +1,8 @@
 import {createRandom} from '../../runtime/random-state.mjs';
+import {COMPACT_VIEWPORT} from '../../runtime/game-catalog.mjs';
 import {difficultyAt, ROUND_MS} from './difficulty.mjs';
 
-export const MIN_VIEW = {width: 320, height: 400};
+export const MIN_VIEW = COMPACT_VIEWPORT;
 export const FLIGHT_BOUNDS = {left: 14, right: 86, bottom: 14, top: 74};
 const GOALS = {left: 20, right: 80, bottom: 18, top: 70};
 const START = {x: 30, y: 45};

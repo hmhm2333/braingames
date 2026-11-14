@@ -5,7 +5,8 @@ const copy=GAME_COPY['regulars-g04'];
 import {RegularsSession,MAX_MISTAKES,RESPONSE_MS} from './regulars-core.mjs';
 import {ServiceScene,loadSprites,guestName,mealName} from './service-scene.mjs';
 import {menuSlot,orderCueRect,viewportLayout} from './layout.mjs';
-import {readPlacement,savePlacement,placementBounds,clampAnchor} from './placement.mjs';
+import {PLACEMENT_KEY,placementBounds,clampAnchor} from './placement.mjs';
+import {mountGameRecords} from '../../runtime/game-records.mjs';
 import {createMoveHandle} from '../../runtime/move-handle.mjs';
 import {createDragPreview,previewRect} from './drag-preview.mjs';
 import {createPixelText} from '../../runtime/pixel-text.mjs';
@@ -24,7 +25,7 @@ export function mountGame(host,options={}){
   let presented=options.presented!==false,ready=false,lastView=null,menuKey='',canReplay=options.canReplay!==false,canRandom=options.canRandom===true;
   const errors=[];
   const bestKey='braingames.g04.bestCustomers.v1';
-  let bestCustomers=0,recoveryUntil=0;
+  let bestCustomers=0,recoveryUntil=0,records;
   const mealUrl=id=>options.ui?options.ui.mealImages[id]:new URL('./assets/'+sprites.manifest.mealImages[id],import.meta.url).href;
 let frozenVisible=false,frozenDragged=false,session,sprites,scene,pixelText,timer=null,raf=null,lastWall=null,disposed=false,uiKey='',pointer=null,announcedVisit=0;
 let preferredPlacement=null,dragAnchor=null,dragOrigin=null,relocating=false,dragPreview=false,moveFrame=null,moveGesture=null,dragSurface=null,placementGeometry=null,dragGeometry=null,sessionSeed=0,layoutPhase=null,handleKey='';
@@ -51,7 +52,7 @@ function showError(error){
   console.error(error);errors.push(error.message);stop();cancelMoveFrame();dragSurface?.end();moveGesture?.cancel();root.dataset.phase='error';pixelText?.suspend();
   const box=document.createElement('section');box.className='window status-dialog';box.setAttribute('role','alert');
   const title=textLabel(copy.loadError),text=document.createElement('p'),reload=document.createElement('button');
-  text.id='error-detail';text.textContent=error.message;reload.id='reload';reload.className='primary';reload.append(textLabel(SHARED_COPY.reload));
+  text.id='error-detail';text.textContent=SHARED_COPY.loadedError;reload.id='reload';reload.className='primary';reload.append(textLabel(SHARED_COPY.reload));
   on(reload,'click',()=>{void options.onReload().catch(showError);});box.append(title,text,reload);
   root.replaceChildren(box);pixelText?.present();pixelText?.flush();reload.focus({preventScroll:true});options.onViewChange?.('error');
 }
@@ -119,7 +120,7 @@ function updateUI(force=false){
   if(s.phase==='summary'){
     if(phaseChanged&&presented&&canReplay)$('replay').focus({preventScroll:true});
     const customers=s.stats.customersServed;
-    if(customers>bestCustomers){bestCustomers=customers;if(!options.qa)localStorage.setItem(bestKey,String(bestCustomers));}
+    if(customers>bestCustomers)bestCustomers=options.qa?customers:records.saveScore(bestKey,customers);
     $('customer-value').textContent=customers;$('best-value').textContent=bestCustomers;
   }
 }
@@ -175,7 +176,8 @@ function finishMoving(active,dx,dy){
   if(active){
     dragAnchor=[dragOrigin[0]+dx,dragOrigin[1]+dy];fitStage();const anchor=[...scene.layout.whale];
     if(anchor.some((value,i)=>value!==dragOrigin[i])){
-      preferredPlacement=savePlacement(localStorage,anchor,root.clientWidth,root.clientHeight);
+      preferredPlacement={x:anchor[0]/root.clientWidth,y:anchor[1]/root.clientHeight};
+      records.savePosition(PLACEMENT_KEY,preferredPlacement);
       repositionVisit();
     }
   }
@@ -206,12 +208,13 @@ async function init(){
   root.innerHTML=markup;
   applyCopy(root,{'#welcome .rule:first-child>span':copy.rules[0],'#welcome .rule:last-child>span':copy.rules[1],'#start span':copy.start,'#arrival-hint':copy.ruleNote,'#result-lead':copy.resultLead,'#summary .customer-result>span':copy.resultUnit,'#summary .best-result>span:first-child':copy.bestLabel,'#replay span':copy.replay,'#random span':SHARED_COPY.next,'#loading p':copy.loading,'#error p:first-child':copy.loadError,'#reload span':SHARED_COPY.reload});
   mountControlGuide(root,copy);
+  records=mountGameRecords(root,'#welcome .window-body','#summary .window-body');
   await styleReady;await pixelFace.load();document.fonts.add(pixelFace);pixelText=createPixelText(root);
   sprites=await loadSprites({manifest:options.manifest,loadAtlas:options.loadAtlas});
   if(disposed)return false;
-  preferredPlacement=readPlacement(localStorage);scene=new ServiceScene($('scene'),sprites);fitStage();session=createSession(params.has('seed')?Number(params.get('seed')):seed());
+  preferredPlacement=records.readPosition(PLACEMENT_KEY);scene=new ServiceScene($('scene'),sprites);fitStage();session=createSession(params.has('seed')?Number(params.get('seed')):seed());
   if(options.checkpoint){const saved=options.checkpoint;if(saved.version!==1)throw Error('Invalid G04 experience checkpoint');sessionSeed=saved.seed;preferredPlacement=saved.placement;announcedVisit=saved.announcedVisit;session=RegularsSession.restore(saved.session,{seed:sessionSeed,guestIds:Object.keys(sprites.manifest.guests),planMotion:visit=>scene.planMotion(visit,sessionSeed)});if(session.phase==='running')session.pause('refresh');fitStage();if(saved.viewport.width!==root.clientWidth||saved.viewport.height!==root.clientHeight)repositionVisit();}
-  if(!options.qa){const saved=localStorage.getItem(bestKey);if(saved!==null){bestCustomers=Number(saved);if(!Number.isSafeInteger(bestCustomers)||bestCustomers<0)throw Error('最佳记录数据无效');}}
+  if(!options.qa)bestCustomers=records.readScore(bestKey);
   syncMenu();
   await Promise.all([...$('menu').querySelectorAll('img')].map(img=>img.decode()));
   const tutorial=Object.values(sprites.manifest.guests)[0];
@@ -264,7 +267,13 @@ async function present({resume:continueRound=true,start=false}={}){
   availability();run();if(resuming)recover();return true;
 }
 function checkpoint(){if(!ready||errors.length)return null;return{version:1,seed:sessionSeed,session:session.checkpoint(),placement:preferredPlacement,announcedVisit,viewport:{width:root.clientWidth,height:root.clientHeight}};}
-function setFrozen(active){frozenVisible=active;frozenDragged=false;}
+function setFrozen(active){
+  frozenVisible=active;frozenDragged=false;
+  const button=$('move-whale');if(!button)return;
+  button.title=active?SHARED_COPY.freezeHint:'长按鲸鱼娘拖动餐台';
+  button.setAttribute('aria-label',button.title);
+  button.tabIndex=active?0:-1;
+}
 function snapshot(){return{view:runView(),ready,disposed,presented,relocating,dragPreview,recovering:recoveryUntil!==0,viewportBlocked:!playableSize(root.clientWidth,root.clientHeight),session:session?.snapshot()??null,scene:scene?{drawCount:scene.drawCount,anchor:[...scene.layout.whale]}:null,rafPending:raf!==null||moveFrame!==null,timerPending:timer!==null,errors:[...errors]};}
 async function dispose(){if(disposed)return;disposed=true;presented=false;stop();cancelMoveFrame();moveGesture?.cancel();await initialization;moveGesture?.dispose();for(const remove of listeners)remove();pixelText?.dispose();sprites?.image.close?.();document.fonts.delete(pixelFace);root.remove();style.remove();}
 const initialization=init().catch(error=>{showError(error);return false;});

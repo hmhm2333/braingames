@@ -18,8 +18,19 @@ export const SHARED_COPY={
   "reload": "重新加载",
   "freezeHint": "忙完点鲸鱼娘继续",
   "bestLabel": "最高记录",
-  "viewportError": "当前游戏需要更大画面，请放大窗口后再试。"
+  "badRecord": "本款存在损坏的本机记录，暂用默认值。可清理该损坏记录。",
+  "storageUnavailable": "本机存储不可用，仍可继续游玩。未保存的最高分或位置无法保留。",
+  "clearRecord": "清理损坏记录",
+  "loadedError": "游戏资源加载失败，请重试。",
+  "bootError": "游戏初始化失败，请重试。",
+  "loading": "游戏准备中…",
+  "noGames": "请前往插件设置，至少勾选一款游戏。",
+  "selectGame": "选择游戏",
+  "viewportError": "本款游戏区域至少需 {width} × {height}，请放大窗口后重试。",
+  "openingGuide": "点击任务标题栏的游戏图标即可开局或继续本局。"
 };
+export const STANDARD_VIEWPORT = {width: 640, height: 480};
+export const COMPACT_VIEWPORT = {width: 320, height: 400};
 export const GAME_COPY={
   "rice-bubbles-g10": {
     "title": "吃白饭吐泡泡",

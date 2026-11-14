@@ -1,6 +1,7 @@
 import React from 'react';
 import {createPixelText} from './runtime/pixel-text.mjs';
 import {gameIconUrl} from './runtime/game-icons.mjs';
+import {SHARED_COPY} from './runtime/game-catalog.mjs';
 
 const h = React.createElement;
 
@@ -50,6 +51,7 @@ export function GameSettings({catalog, state, saving, error, onChange}) {
   return h('section', {'data-braingames-settings': true},
     h('fieldset', {className: 'braingames-settings-form', disabled: !writable || saving},
       h('legend', null, '游戏设置'),
+      h('p', {className: 'braingames-setting-note'}, SHARED_COPY.openingGuide),
       h('h4', null, '游戏池'),
       h('div', {className: 'braingames-game-pool'}, ...catalog.map(game =>
         h('label', {key: game.id},

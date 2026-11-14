@@ -54,7 +54,7 @@
 }
 
 .braingames-popup-message > img { margin-top: 2px; }
-.braingames-popup-detail { margin: 0 0 12px; font-size: 16px; overflow-wrap: anywhere; }
+.braingames-popup-detail { margin: 0 0 12px; font: 400 14px/20px system-ui, sans-serif; overflow-wrap: anywhere; }
 .braingames-popup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .braingames-popup-actions button {
   flex: 1 0 auto;

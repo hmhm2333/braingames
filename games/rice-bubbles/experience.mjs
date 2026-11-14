@@ -1,6 +1,7 @@
 import {GAME_COPY,SHARED_COPY} from '../../runtime/game-catalog.mjs';
 import {applyCopy} from '../../runtime/apply-copy.mjs';
 import {mountControlGuide} from '../../runtime/control-guide.mjs';
+import {mountGameRecords} from '../../runtime/game-records.mjs';
 const copy=GAME_COPY['rice-bubbles-g10'];
 import {createSession} from './core.mjs';
 import {FOOD_TYPES} from './rules.mjs';
@@ -27,6 +28,7 @@ let canReplay=options.canReplay!==false,canRandom=options.canRandom===true;
 let physicalSpace=false,releaseUncertain=false,qaSequence=null,qaSeed=null,qaFrozen=false;
 const qa=options.qa===true;
 const bestKey='braingames.g10.bestSeconds.picky.v3';
+let records;
 let bestSeconds=0;
 const logs=[],errors=[],frameTimes=[];
 const listeners=[];
@@ -144,7 +146,7 @@ async function resumeGame(){
 function showResult(){
   cancelLoop();sound.stop();const s=session.snapshot();
   const seconds=Math.floor(s.survivedMs/1000);
-  if(seconds>bestSeconds){bestSeconds=seconds;if(!qa)localStorage.setItem(bestKey,String(bestSeconds));}
+  if(seconds>bestSeconds)bestSeconds=qa?seconds:records.saveScore(bestKey,seconds);
   $('elapsed-value').textContent=seconds;$('best-value').textContent=bestSeconds;
   lobbyClock=0;scene.ready(s.bowlFill,0);setView('finished');render();runLoop();$('again-button').focus({preventScroll:true});
 }
@@ -180,7 +182,7 @@ function fail(error){
   cancelLoop();sound.stop();errors.push(error.stack??String(error));console.error(error);
   view='error';root.dataset.view=view;$('scene-root').inert=true;
   for(const name of panels)$(name+'-panel').hidden=name!=='error';
-  $('error-message').textContent=error.message??String(error);$('feedback').hidden=true;$('reload-button').focus({preventScroll:true});options.onViewChange?.('error');
+  $('error-message').textContent=SHARED_COPY.loadedError;$('feedback').hidden=true;$('reload-button').focus({preventScroll:true});options.onViewChange?.('error');
 }
 
 
@@ -227,9 +229,10 @@ const initialization=(async()=>{
   if(disposed)return false;const template=document.createElement('template');template.innerHTML=text;root.replaceChildren(...template.content.firstElementChild.childNodes);markupLoaded=true;
   applyCopy(root,{'#loading-panel h1':copy.loading,'#start-button span':copy.start,'#result-title':copy.resultLead,'#result-panel .survival-result>span':copy.resultUnit,'#result-panel .best-label':copy.bestLabel,'#again-button':copy.replay,'#back-button':SHARED_COPY.next,'#error-title':copy.loadError,'#reload-button':SHARED_COPY.reload});
   mountControlGuide(root,copy);
+  records=mountGameRecords(root,'#welcome-panel','#result-panel');
   document.fonts.add(pixelFace);pixelText=createPixelText(root);root.dataset.font='loaded';
   for(const img of root.querySelectorAll('img[src]'))img.src=ui?ui.icons[img.getAttribute('src')]:new URL(img.getAttribute('src'),import.meta.url).href;
-  const resumeButton=document.createElement('button');resumeButton.id='resume-whale';resumeButton.type='button';resumeButton.tabIndex=-1;resumeButton.hidden=true;resumeButton.dataset.gameResume='';resumeButton.setAttribute('aria-label','点击鲸鱼娘继续游戏');Object.assign(resumeButton.style,{position:'absolute',border:'none',padding:'0',background:'transparent',cursor:'pointer',zIndex:'12'});root.append(resumeButton);
+  const resumeButton=document.createElement('button');resumeButton.id='resume-whale';resumeButton.type='button';resumeButton.hidden=true;resumeButton.dataset.gameResume='';resumeButton.tabIndex=0;resumeButton.title=SHARED_COPY.freezeHint;resumeButton.setAttribute('aria-label',resumeButton.title);Object.assign(resumeButton.style,{position:'absolute',border:'none',padding:'0',background:'transparent',cursor:'pointer',zIndex:'12'});root.append(resumeButton);
   on(resumeButton,'pointerdown',event=>event.preventDefault());on(resumeButton,'click',event=>{event.preventDefault();if(frozenVisible)void options.onResume();});
   scene=new WhaleScene($('scene-root'),{assetsBase:options.assetsBase??new URL('./assets/g10/',import.meta.url),manifest:options.manifest,loadAtlas:options.loadAtlas,bounds:()=>({width:host.clientWidth,height:host.clientHeight})});
 on($('start-button'),'click',startGame);on($('again-button'),'click',startGame);
@@ -257,7 +260,7 @@ const observer=new ResizeObserver(()=>{
   }
   $('rice-input-rule').textContent=copy.ruleNote;
   $('scene-root').setAttribute('aria-label',copy.title);
-  if(!qa){const saved=localStorage.getItem(bestKey);if(saved!==null){bestSeconds=Number(saved);if(!Number.isSafeInteger(bestSeconds)||bestSeconds<0)throw Error('最佳记录数据无效');}}
+  if(!qa)bestSeconds=records.readScore(bestKey);
   await scene.init();
   if(disposed)return false;
   ready=true;root.dataset.presented=String(presented);
@@ -268,7 +271,7 @@ const observer=new ResizeObserver(()=>{
     if(view==='finished'){$('elapsed-value').textContent=String(Math.floor(session.snapshot().survivedMs/1000));$('best-value').textContent=String(bestSeconds);}
     render();placeControls();
   }else setView('welcome');updateStart();if(presented)runLoop();else pixelText.suspend();return true;
- }catch(error){if(!disposed){if(markupLoaded)fail(error);else{errors.push(error.stack??String(error));view='error';root.dataset.view='error';root.replaceChildren();const panel=document.createElement('section');panel.className='paper dialog-panel';const title=document.createElement('h2');title.textContent='游戏界面加载失败';const message=document.createElement('p');message.textContent=error.message;const reload=document.createElement('button');reload.id='reload-button';reload.className='primary';reload.textContent=SHARED_COPY.reload;on(reload,'click',()=>{void options.onReload().catch(fail);});panel.append(title,message,reload);root.append(panel);console.error(error);}}return false;}
+ }catch(error){if(!disposed){if(markupLoaded)fail(error);else{errors.push(error.stack??String(error));view='error';root.dataset.view='error';root.replaceChildren();const panel=document.createElement('section');panel.className='paper dialog-panel';const title=document.createElement('h2');title.textContent='游戏界面加载失败';const message=document.createElement('p');message.textContent=SHARED_COPY.loadedError;const reload=document.createElement('button');reload.id='reload-button';reload.className='primary';reload.textContent=SHARED_COPY.reload;on(reload,'click',()=>{void options.onReload().catch(fail);});panel.append(title,message,reload);root.append(panel);console.error(error);}}return false;}
 })();
 return {ready:initialization,snapshot,pause:pauseGame,resume:resumeGame,suspend,present,preview,paintStatic,finish:finishGame,
   getRunState:()=>({view,hasRound:session!==null}),

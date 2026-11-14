@@ -1,5 +1,5 @@
 // One resident round across all host tasks. Host selection is injected.
-export function createGameRuntime({games,loadStage,chooseGame,onChange=()=>{},onInputGuardChange=()=>{},enabledGameIds=games.map(game=>game.id),autoInvite=true,recommendByTask=false,keepVisibleOnPause=false,inviteRequireRunning=true,inviteRequireNoUnread=true}){
+export function createGameRuntime({games,loadStage,chooseGame,canFit=()=>true,onChange=()=>{},onInputGuardChange=()=>{},enabledGameIds=games.map(game=>game.id),autoInvite=true,recommendByTask=false,keepVisibleOnPause=false,inviteRequireRunning=true,inviteRequireNoUnread=true}){
   if(!games.length||new Set(games.map(game=>game.id)).size!==games.length)throw Error('Game IDs must be nonempty and unique');
   let current=games[0],stage=null,loading=null,closing=null,opening=null,reloading=null,changing=null,selection=null,restorePromise=null,restoreCheckpoint=null;
   let intent=0,disposed=false,disposePromise=null,roundChosen=false;
@@ -7,7 +7,8 @@ export function createGameRuntime({games,loadStage,chooseGame,onChange=()=>{},on
   let presentation='hidden',busy=false,eligible=false,invited=false,error='',selectionFailed=false;
   const notify=()=>onChange();
   const runState=()=>stage?.getRunState()??{view:null,hasRound:false};
-  const alternatives=(exclude=current.id)=>games.filter(game=>enabled.has(game.id)&&game.id!==exclude);
+  const playable=()=>games.filter(game=>enabled.has(game.id)&&canFit(game));
+  const alternatives=(exclude=current.id)=>playable().filter(game=>game.id!==exclude);
   const randomGame=candidates=>{const value=new Uint32Array(1);crypto.getRandomValues(value);return candidates[value[0]%candidates.length];};
   function status(){return{gameId:current.id,presentation,mode:stage?.getMode()??'background',resident:stage!==null,loading:loading!==null||closing!==null||changing!==null||reloading!==null||selection!==null||restorePromise!==null,selecting:selection!==null,selectionFailed,error,
     ...runState(),canStart:enabled.size>0,canReplay:enabled.has(current.id),canRandom:alternatives().length>0,autoInvite:invitationEnabled,enabledGameIds:[...enabled],recommendByTask:useRecommendation,keepVisibleOnPause:keepVisible,inviteRequireRunning:requireRunning,inviteRequireNoUnread:requireNoUnread};}
@@ -42,17 +43,31 @@ export function createGameRuntime({games,loadStage,chooseGame,onChange=()=>{},on
     try{return await pending;}catch(failure){error=failure.message;await closeStage();throw failure;}
     finally{if(loading===pending)loading=null;notify();}
   }
-  async function present({start=false,random:forceRandom=false}={}){
+  async function present({start=false,random:forceRandom=false,gameId}={}){
     if(disposed)return{opened:false,reason:'unloaded'};
-    if(!enabled.size&&!runState().hasRound)return{opened:false,reason:'no-enabled-game'};
+    const state=runState();
+    const hasActiveRound=['playing','paused'].includes(state.view);
+    if(!enabled.size&&!state.hasRound)return{opened:false,reason:'no-enabled-game'};
+    const requested=gameId&&games.find(game=>game.id===gameId&&enabled.has(game.id));
+    if(gameId&&!requested)return{opened:false,reason:'no-enabled-game'};
+    if(requested&&requested!==current&&hasActiveRound)return{opened:false,reason:'round-in-progress'};
+    const fits=canFit(current);
+    const blocked=requested&&!canFit(requested)||!requested&&!fits&&(hasActiveRound||!playable().length);
+    if(blocked)return{opened:false,reason:'viewport',gameId:requested?.id??current.id};
+    const mustSwitch=requested?requested!==current:
+      !state.hasRound&&(!enabled.has(current.id)||!fits)||state.view==='finished'&&!fits;
     const ticket=++intent;error='';selectionFailed=false;presentation='active';notify();
     try{
-      if(stage&&!enabled.has(current.id)&&!runState().hasRound){roundChosen=false;await closeStage();}
+      if(stage&&mustSwitch){
+        roundChosen=false;await closeStage();
+      }
       else if(closing)await closing;
       if(disposed||ticket!==intent)return{opened:false,reason:'superseded'};
       if(!stage&&!enabled.size){presentation='hidden';notify();return{opened:false,reason:'no-enabled-game'};}
-      if(!stage&&!loading&&(!roundChosen||!enabled.has(current.id))){
-        const selected=await pick(games.filter(game=>enabled.has(game.id)),forceRandom);
+      if(!stage&&!loading&&(requested||!roundChosen||!enabled.has(current.id)||!canFit(current))){
+        const candidates=playable();
+        if(!candidates.length){presentation='hidden';notify();return{opened:false,reason:'viewport',gameId:current.id};}
+        const selected=requested??await pick(candidates,forceRandom);
         if(disposed||ticket!==intent)return{opened:false,reason:'superseded'};
         current=selected;roundChosen=true;
       }
@@ -63,7 +78,7 @@ export function createGameRuntime({games,loadStage,chooseGame,onChange=()=>{},on
       }
       const activation=await mounted.foreground({start});
       if(disposed||ticket!==intent)return{opened:false,reason:'superseded'};
-      presentation=mounted.getMode()==='foreground'?'active':mounted.isVisible()?'frozen':'hidden';notify();return{opened:mounted.getMode()==='foreground',presentation,...(activation?.reason?{reason:activation.reason}:{})};
+      presentation=mounted.getMode()==='foreground'?'active':mounted.isVisible()?'frozen':'hidden';notify();return{opened:mounted.getMode()==='foreground',presentation,...(activation?.reason?{reason:activation.reason,gameId:current.id}:{})};
     }catch(failure){if(disposed||ticket!==intent)return{opened:false,reason:'superseded'};error=failure.message;presentation='hidden';notify();throw failure;}
   }
   function background(reason='task-pointer'){
@@ -141,9 +156,12 @@ export function createGameRuntime({games,loadStage,chooseGame,onChange=()=>{},on
   }
   function open(options={}){
     if(restorePromise)return restorePromise.then(()=>open(options));if(reloading)return reloading;if(changing)return changing;
-    if(opening&&presentation==='active'&&!options.random)return opening;
-    if(options.random&&selection)cancelIntent();
+    if(opening&&presentation==='active'){
+      if(options.gameId&&loading)return opening;
+      if(!options.random&&!options.gameId)return opening;
+    }
+    if((options.random||options.gameId)&&selection)cancelIntent();
     const pending=present(options);opening=pending;return pending.finally(()=>{if(opening===pending)opening=null;});
   }
-  return{status,open,observe,background,hide,dismissInvitation,configure,random,reload,checkpoint,restore,abandonRestore,dispose,diagnostics:()=>({...status(),stage:stage?.getDiagnostics()??null})};
+  return{status,open,observe,background,hide,dismissInvitation,configure,random,reload,checkpoint,restore,abandonRestore,dispose,refreshAvailability:availability,diagnostics:()=>({...status(),stage:stage?.getDiagnostics()??null})};
 }
